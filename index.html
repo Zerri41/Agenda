@@ -169,6 +169,17 @@
   .crmcard .ultimo{font-size:12.5px;color:var(--steel);margin-top:7px}
   .crmcard .ultimo b{color:var(--ink);font-weight:600}
   .crmcard .semdados{color:var(--steel);font-style:italic;font-size:12.5px}
+  .depbadge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
+  .crmcard .rfqs{margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px}
+  .crmcard .rfqs .ln{display:flex;justify-content:space-between;gap:8px;margin:3px 0;color:var(--steel)}
+  .crmcard .rfqs .ln b{color:var(--ink);font-weight:600}
+  .crmcard .ligados{margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px;display:flex;gap:6px;flex-wrap:wrap}
+  .chip{background:#E4E8F0;border-radius:10px;padding:2px 9px;font-size:11.5px;display:inline-flex;align-items:center;gap:5px}
+  .chip .x{cursor:pointer;color:var(--warn);font-weight:700}
+  .mesgrupo{margin-bottom:14px}
+  .mesgrupo h3{font-size:13px;margin:0 0 5px}
+  .mesgrupo .ln{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-top:1px solid var(--line)}
+  #crmTop .kpi{cursor:pointer}
   .anexos .an{font-size:13px;padding:3px 0;color:#243049}
   .anexos .an span{color:var(--steel);font-size:11.5px}
   .anexos .an.done{color:var(--steel);text-decoration:line-through}
@@ -551,7 +562,7 @@
     <section id="v-crm" class="hidden">
       <div class="panel">
         <h2>CRM <span class="c" id="crmC"></span></h2>
-        <p class="hint">Contactos, último contacto e valor esperado por cliente. Serve para trabalhar a carteira e para apresentar ao Benoit e à Marilyne.</p>
+        <p class="hint">Clientes independentes dos tópicos e tarefas — liga-os só se quiseres. Contactos, último contacto, RFQs linha a linha e valor total. Serve para trabalhar a carteira e para apresentar ao Benoit e à Marilyne.</p>
         <div class="addrow" id="crmFiltros" style="margin:0 0 14px">
           <button class="cta ghost" data-crmf="todos">Todos</button>
           <button class="cta ghost" data-crmf="servicos">Serviços</button>
@@ -560,7 +571,17 @@
         <div class="kpis" id="crmTop"></div>
         <div id="crmGrid" class="crmgrid"></div>
       </div>
+      <div class="panel" id="crmMesHost"></div>
       <div class="panel" id="crmEditorHost"></div>
+      <div class="panel">
+        <h2>Novo cliente CRM</h2>
+        <div class="grid2">
+          <div><label class="f" for="ncNome">Nome do cliente</label><input type="text" id="ncNome"></div>
+          <div><label class="f" for="ncDom">Domínio</label>
+            <select id="ncDom"><option value="servicos">Serviços</option><option value="bicicletas">Bicicletas</option><option value="diversos">Diversos e institucional</option></select></div>
+        </div>
+        <div class="btnrow"><button class="cta" id="ncAdd">Adicionar cliente</button></div>
+      </div>
     </section>
 
     <!-- ATAS -->
@@ -761,7 +782,7 @@ const SEED_TOP=[
 const SEED_TAR=[
  ['','servicos','Exemplo de tarefa, apaga e cria as tuas','Exemplo']];
 
-let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],rep:'',seeded:false}, M={atas:[]};
+let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],rep:'',seeded:false}, M={atas:[]};
 const BACKUP=null;
 let viewDate=new Date(), calY=viewDate.getFullYear(), calM=viewDate.getMonth();
 let curMes='', arqMes='todos', pnMes='', kpMes='', momEdit=null, tab='dia', aberto={}, abertoF={};
@@ -809,16 +830,14 @@ function pack(){return{app:'agenda-bontaz',versao:9,gerado:new Date().toISOStrin
 function aplicarPack(p){
   if(!p||!p.core)throw new Error('ficheiro sem dados');
   S=p.core;M=p.moms||{atas:[]};
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];M.atas=M.atas||[];
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];M.atas=M.atas||[];
   if(!S.feiras.length)S.feiras=seedFeiras();
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[]});
   S.tarefas.forEach(t=>{if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
     if(t.nota===undefined)t.nota='';if(!t.prazo)t.prazo=today()});
-  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota='';
-    if(!Array.isArray(t.contactos))t.contactos=[];
-    if(!t.ultimoContacto)t.ultimoContacto={data:'',canal:'',assunto:''};
-    if(t.valorEsperado===undefined)t.valorEsperado=0;
-    if(t.rfqAbertas===undefined)t.rfqAbertas=0});
+  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
+  S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
+    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento=''});
   M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId=''});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   S.seeded=true;
@@ -1115,7 +1134,7 @@ async function load(){
   else marcar(true);
   let v=await jget(K_CORE);if(!v)v=await jget(K_OLD2);
   if(v)S=Object.assign(S,v);
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];
   const virgem=!S.seeded&&!S.topicos.length&&!S.tarefas.length;
   if(virgem){try{aplicarPack(BACKUP)}catch(e){
     S.topicos=SEED_TOP.map((s,i)=>({id:'t'+i,titulo:s[0],dominio:s[1],proxima:s[2],aguarda:s[3],estado:s[4],revisao:'',fechadoEm:'',nota:''}));
@@ -1130,11 +1149,9 @@ async function load(){
   S.seeded=true;
   S.tarefas.forEach(t=>{if(!t.prazo)t.prazo=today();if(t.nota===undefined)t.nota='';
     if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId=''});
-  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota='';
-    if(!Array.isArray(t.contactos))t.contactos=[];
-    if(!t.ultimoContacto)t.ultimoContacto={data:'',canal:'',assunto:''};
-    if(t.valorEsperado===undefined)t.valorEsperado=0;
-    if(t.rfqAbertas===undefined)t.rfqAbertas=0});
+  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
+  S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
+    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento=''});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   let m=await jget(K_MOM);if(!m)m=await jget(K_OLDM);
   if(m)M=m;M.atas=M.atas||[];
@@ -1595,86 +1612,181 @@ function renderTopics(){
 /* ---------- CRM ---------- */
 let crmFiltro='todos';
 const CANAL={email:'Email',telefone:'Telefone',reuniao:'Reunião',presencial:'Presencial'};
+function crmHash(nome){let h=0;for(let i=0;i<nome.length;i++)h=(h*31+nome.charCodeAt(i))>>>0;return h%360}
+const crmDeptBg=nome=>'hsl('+crmHash(nome)+',55%,88%)';
+const crmDeptFg=nome=>'hsl('+crmHash(nome)+',60%,26%)';
 function crmLista(){
-  return S.topicos.filter(t=>t.estado!=='fechado'&&(crmFiltro==='todos'||t.dominio===crmFiltro));
+  return S.crm.filter(c=>crmFiltro==='todos'||c.dominio===crmFiltro);
 }
-function crmCardEl(t){
-  const d=document.createElement('div');d.className='crmcard '+t.dominio;
-  d.innerHTML='<div class="head"><span class="t">'+esc(t.titulo)+'</span>'+
-    '<span class="tag '+t.dominio+'">'+DOM[t.dominio]+'</span></div>'+
-    '<div class="stats"><div><b>'+eur(t.valorEsperado)+'</b>valor esperado</div>'+
-    '<div><b>'+(+t.rfqAbertas||0)+'</b>RFQ abertas</div></div>';
-  if(t.contactos.length){
-    const c=document.createElement('div');c.className='contactos';
-    t.contactos.forEach(p=>{
+function crmRfqTotal(c){return (c.rfqs||[]).reduce((s,r)=>s+(+r.valor||0),0)}
+function crmCardEl(c){
+  const d=document.createElement('div');d.className='crmcard '+c.dominio;
+  d.innerHTML='<div class="head"><span class="t">'+esc(c.nome)+'</span>'+
+    '<span class="tag '+c.dominio+'">'+DOM[c.dominio]+'</span>'+
+    (c.departamento?'<span class="depbadge" style="background:'+crmDeptBg(c.departamento)+';color:'+crmDeptFg(c.departamento)+'">'+esc(c.departamento)+'</span>':'')+
+    '</div>'+
+    '<div class="stats"><div><b>'+eur(crmRfqTotal(c))+'</b>valor total RFQ</div>'+
+    '<div><b>'+(c.rfqs||[]).length+'</b>RFQs registadas</div></div>';
+  if(c.contactos.length){
+    const co=document.createElement('div');co.className='contactos';
+    c.contactos.forEach(p=>{
       const bits=[esc(p.nome)];if(p.cargo)bits.push(esc(p.cargo));
       let linha=bits.join(', ');
       if(p.email)linha+=' · <a href="mailto:'+esc(p.email)+'">'+esc(p.email)+'</a>';
       if(p.telefone)linha+=' · <a href="tel:'+esc(p.telefone)+'">'+esc(p.telefone)+'</a>';
-      const l=document.createElement('div');l.innerHTML=linha;c.appendChild(l);
+      const l=document.createElement('div');l.innerHTML=linha;co.appendChild(l);
     });
-    d.appendChild(c);
+    d.appendChild(co);
   } else {
     const p=document.createElement('p');p.className='semdados';p.textContent='Sem contactos registados.';d.appendChild(p);
   }
-  const uc=t.ultimoContacto;
+  const uc=c.ultimoContacto;
   const u=document.createElement('div');u.className='ultimo';
   u.innerHTML=(uc&&uc.data)
     ? 'Último contacto: <b>'+(CANAL[uc.canal]||uc.canal||'')+'</b>, '+esc(uc.data)+(uc.assunto?' — '+esc(uc.assunto):'')
     : 'Sem registo de último contacto.';
   d.appendChild(u);
+  if((c.rfqs||[]).length){
+    const rb=document.createElement('div');rb.className='rfqs';
+    [...c.rfqs].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1).forEach(r=>{
+      const l=document.createElement('div');l.className='ln';
+      l.innerHTML='<span>'+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small></span><b>'+eur(r.valor)+'</b>';
+      rb.appendChild(l);
+    });
+    d.appendChild(rb);
+  }
+  const tops=(c.topicoIds||[]).map(id=>topico(id)).filter(Boolean);
+  if(tops.length){
+    const lg=document.createElement('div');lg.className='ligados';
+    tops.forEach(t=>{
+      const ab=S.tarefas.filter(x=>x.topicoId===t.id&&!x.feito).length;
+      const chip=document.createElement('span');chip.className='chip';
+      chip.innerHTML=esc(t.titulo)+(ab?' ('+ab+')':'')+' <span class="x">×</span>';
+      chip.querySelector('.x').onclick=()=>{c.topicoIds=c.topicoIds.filter(x=>x!==t.id);save();renderAll()};
+      lg.appendChild(chip);
+    });
+    d.appendChild(lg);
+  }
   const acts=document.createElement('div');acts.className='acts';
-  const b=document.createElement('button');b.textContent='Editar CRM';b.onclick=()=>crmEdit(t);
-  acts.appendChild(b);d.appendChild(acts);
+  const b=document.createElement('button');b.textContent='Editar CRM';b.onclick=()=>crmEdit(c);
+  const del=document.createElement('button');del.textContent='Eliminar';
+  del.onclick=()=>{if(confirm('Eliminar "'+c.nome+'" do CRM? Os tópicos e tarefas ligados não são apagados, só deixam de estar ligados aqui.')){
+    S.crm=S.crm.filter(x=>x.id!==c.id);save();renderAll()}};
+  acts.append(b,del);d.appendChild(acts);
   return d;
+}
+function crmMensal(lista){
+  const host=document.getElementById('crmMesHost');
+  const porMes={};
+  lista.forEach(c=>(c.rfqs||[]).forEach(r=>{
+    const m=(r.data||'').slice(0,7)||'sem-data';
+    (porMes[m]=porMes[m]||[]).push({descricao:r.descricao,valor:r.valor,data:r.data,cliente:c.nome});
+  }));
+  const meses=Object.keys(porMes).sort().reverse();
+  if(!meses.length){
+    host.innerHTML='<h2>RFQs por mês <button class="cta ghost" id="crmMesFechar" style="float:right">Fechar</button></h2><p class="empty">Sem RFQs registadas neste filtro.</p>';
+  } else {
+    host.innerHTML='<h2>RFQs por mês <button class="cta ghost" id="crmMesFechar" style="float:right">Fechar</button></h2>'+
+      meses.map(m=>{
+        const arr=[...porMes[m]].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1);
+        const tot=arr.reduce((s,r)=>s+(+r.valor||0),0);
+        return '<div class="mesgrupo"><h3>'+(m==='sem-data'?'Sem data':ymLabel(m))+' — '+arr.length+' RFQ'+(arr.length>1?'s':'')+', '+eur(tot)+'</h3>'+
+          arr.map(r=>'<div class="ln"><span>'+esc(r.cliente)+', '+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small></span><b>'+eur(r.valor)+'</b></div>').join('')+
+          '</div>';
+      }).join('');
+  }
+  document.getElementById('crmMesFechar').onclick=()=>{host.innerHTML=''};
+  host.scrollIntoView({block:'center'});
 }
 function renderCRM(){
   document.querySelectorAll('#crmFiltros button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.crmf===crmFiltro));
   const l=crmLista();
   document.getElementById('crmC').textContent=l.length;
-  const totV=l.reduce((s,t)=>s+(+t.valorEsperado||0),0);
-  const totR=l.reduce((s,t)=>s+(+t.rfqAbertas||0),0);
-  document.getElementById('crmTop').innerHTML=
-    kpiEl(l.length,'clientes na vista')+kpiEl(eur(totV),'valor esperado total')+kpiEl(totR,'RFQ abertas no total');
+  const totV=l.reduce((s,c)=>s+crmRfqTotal(c),0);
+  const totR=l.reduce((s,c)=>s+(c.rfqs||[]).length,0);
+  const top=document.getElementById('crmTop');
+  top.innerHTML=kpiEl(l.length,'clientes na vista')+kpiEl(eur(totV),'valor total de RFQs, clica para ver por mês')+kpiEl(totR,'RFQs registadas');
+  top.children[1].onclick=()=>crmMensal(l);
   const grid=document.getElementById('crmGrid');grid.innerHTML='';
-  if(!l.length){grid.innerHTML='<p class="empty">Sem clientes neste filtro.</p>';return}
-  l.sort((a,b)=>(+b.valorEsperado||0)-(+a.valorEsperado||0)).forEach(t=>grid.appendChild(crmCardEl(t)));
+  if(!l.length){grid.innerHTML='<p class="empty">Sem clientes neste filtro. Cria um no formulário em baixo.</p>';return}
+  l.sort((a,b)=>crmRfqTotal(b)-crmRfqTotal(a)).forEach(c=>grid.appendChild(crmCardEl(c)));
 }
-function crmEdit(t){
+function crmRefreshLinked(c,host){
+  const box=host.querySelector('#crmTopLinked');
+  const tops=(c.topicoIds||[]).map(id=>topico(id)).filter(Boolean);
+  box.innerHTML=tops.length?'':'<p class="hint" style="margin:4px 0 0">Nenhum tópico ligado ainda.</p>';
+  tops.forEach(t=>{
+    const ab=S.tarefas.filter(x=>x.topicoId===t.id&&!x.feito).length;
+    const chip=document.createElement('span');chip.className='chip';
+    chip.innerHTML=esc(t.titulo)+(ab?' ('+ab+')':'')+' <span class="x">×</span>';
+    chip.querySelector('.x').onclick=()=>{c.topicoIds=c.topicoIds.filter(x=>x!==t.id);save();crmRefreshLinked(c,host);renderTopics();renderCRM()};
+    box.appendChild(chip);
+  });
+}
+function crmEdit(c){
   const host=document.getElementById('crmEditorHost');
-  host.innerHTML='<h2>Editar CRM, '+esc(t.titulo)+'</h2>'+
-    '<div style="margin-top:6px"><label class="f">Contactos, um por linha. Formato: nome | cargo | email | telefone</label>'+
-    '<textarea id="crmContactos" class="mono" style="min-height:80px" placeholder="Ana Silva | Compras | ana@cliente.pt | 912345678"></textarea></div>'+
+  host.innerHTML='<h2>Editar CRM, '+esc(c.nome)+'</h2>'+
+    '<div class="grid2"><div><label class="f">Nome do cliente</label><input type="text" id="crmNome"></div>'+
+    '<div><label class="f">Domínio</label><select id="crmDom"><option value="servicos">Serviços</option><option value="bicicletas">Bicicletas</option><option value="diversos">Diversos e institucional</option></select></div></div>'+
+    '<div style="margin-top:10px"><label class="f">Departamento a trabalhar nisto, texto livre</label><input type="text" id="crmDept" placeholder="ex: Industrialização"></div>'+
+    '<div style="margin-top:10px"><label class="f">Contactos, um por linha. Formato: nome | cargo | email | telefone</label>'+
+    '<textarea id="crmContactos" class="mono" style="min-height:70px" placeholder="Ana Silva | Compras | ana@cliente.pt | 912345678"></textarea></div>'+
     '<div class="grid3" style="margin-top:10px">'+
     '<div><label class="f">Último contacto, canal</label><select id="crmCanal"><option value="">—</option>'+
     Object.entries(CANAL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
     '<div><label class="f">Data</label><input type="date" id="crmData"></div>'+
     '<div><label class="f">Assunto, para procurar depois</label><input type="text" id="crmAssunto"></div></div>'+
-    '<div class="grid2" style="margin-top:10px">'+
-    '<div><label class="f">Valor esperado, €</label><input type="number" id="crmValor" min="0" step="1"></div>'+
-    '<div><label class="f">RFQ abertas</label><input type="number" id="crmRfq" min="0" step="1"></div></div>'+
+    '<div style="margin-top:10px"><label class="f">RFQs, uma por linha. Formato: descrição | valor | data aaaa-mm-dd</label>'+
+    '<textarea id="crmRfqs" class="mono" style="min-height:70px" placeholder="Cotação linha travagem M2300 | 250000 | 2026-09-10"></textarea></div>'+
+    '<div style="margin-top:10px"><label class="f">Ligar a um tópico existente, opcional</label>'+
+    '<div class="addrow"><select id="crmTopSel"></select><button class="cta ghost" id="crmTopAdd">Ligar</button></div>'+
+    '<div id="crmTopLinked" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div></div>'+
     '<div class="btnrow"><button class="cta" id="crmSave">Guardar</button><button class="cta ghost" id="crmCancel">Cancelar</button></div>';
-  host.querySelector('#crmContactos').value=t.contactos.map(p=>[p.nome,p.cargo,p.email,p.telefone].join(' | ')).join('\n');
-  host.querySelector('#crmCanal').value=t.ultimoContacto.canal||'';
-  host.querySelector('#crmData').value=t.ultimoContacto.data||'';
-  host.querySelector('#crmAssunto').value=t.ultimoContacto.assunto||'';
-  host.querySelector('#crmValor').value=t.valorEsperado||0;
-  host.querySelector('#crmRfq').value=t.rfqAbertas||0;
+  host.querySelector('#crmNome').value=c.nome;
+  host.querySelector('#crmDom').value=c.dominio;
+  host.querySelector('#crmDept').value=c.departamento||'';
+  host.querySelector('#crmContactos').value=(c.contactos||[]).map(p=>[p.nome,p.cargo,p.email,p.telefone].join(' | ')).join('\n');
+  host.querySelector('#crmCanal').value=c.ultimoContacto.canal||'';
+  host.querySelector('#crmData').value=c.ultimoContacto.data||'';
+  host.querySelector('#crmAssunto').value=c.ultimoContacto.assunto||'';
+  host.querySelector('#crmRfqs').value=(c.rfqs||[]).map(r=>[r.descricao,r.valor,r.data].join(' | ')).join('\n');
+  fillTopSelect(host.querySelector('#crmTopSel'),'','Escolhe um tópico...');
+  crmRefreshLinked(c,host);
+  host.querySelector('#crmTopAdd').onclick=()=>{
+    const sel=host.querySelector('#crmTopSel');
+    if(!sel.value||sel.value==='__novo')return;
+    if(!c.topicoIds.includes(sel.value))c.topicoIds.push(sel.value);
+    save();sel.value='';crmRefreshLinked(c,host);renderTopics();
+  };
   host.querySelector('#crmCancel').onclick=()=>{host.innerHTML=''};
   host.querySelector('#crmSave').onclick=()=>{
-    t.contactos=host.querySelector('#crmContactos').value.split('\n').map(s=>s.trim()).filter(Boolean).map(l=>{
-      const[nome,cargo,email,telefone]=l.split('|').map(s=>(s||'').trim());
-      return{nome:nome||'',cargo:cargo||'',email:email||'',telefone:telefone||''};
+    const nome=host.querySelector('#crmNome').value.trim();if(!nome)return;
+    c.nome=nome;
+    c.dominio=host.querySelector('#crmDom').value;
+    c.departamento=host.querySelector('#crmDept').value.trim();
+    c.contactos=host.querySelector('#crmContactos').value.split('\n').map(s=>s.trim()).filter(Boolean).map(l=>{
+      const[cn,cargo,email,telefone]=l.split('|').map(s=>(s||'').trim());
+      return{nome:cn||'',cargo:cargo||'',email:email||'',telefone:telefone||''};
     });
-    t.ultimoContacto={canal:host.querySelector('#crmCanal').value,data:host.querySelector('#crmData').value,
+    c.ultimoContacto={canal:host.querySelector('#crmCanal').value,data:host.querySelector('#crmData').value,
       assunto:host.querySelector('#crmAssunto').value.trim()};
-    t.valorEsperado=+host.querySelector('#crmValor').value||0;
-    t.rfqAbertas=+host.querySelector('#crmRfq').value||0;
+    c.rfqs=host.querySelector('#crmRfqs').value.split('\n').map(s=>s.trim()).filter(Boolean).map((l,i)=>{
+      const[descricao,valor,data]=l.split('|').map(s=>(s||'').trim());
+      return{id:'r'+Date.now()+'_'+i,descricao:descricao||'',valor:+valor||0,data:data||''};
+    });
     save();host.innerHTML='';renderAll();
   };
   host.scrollIntoView({block:'center'});
 }
 document.querySelectorAll('#crmFiltros button').forEach(b=>b.onclick=()=>{crmFiltro=b.dataset.crmf;renderCRM()});
+document.getElementById('ncAdd').onclick=()=>{
+  const inp=document.getElementById('ncNome');
+  const nome=inp.value.trim();if(!nome)return;
+  const dom=document.getElementById('ncDom').value;
+  S.crm.push({id:'c'+Date.now(),nome,dominio:dom,departamento:'',contactos:[],
+    ultimoContacto:{data:'',canal:'',assunto:''},rfqs:[],topicoIds:[]});
+  inp.value='';save();renderAll();
+};
 function renderMoms(){
   const l=[...M.atas].sort((a,b)=>a.data<b.data?1:-1);
   document.getElementById('momC').textContent=l.length;
