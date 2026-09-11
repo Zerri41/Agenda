@@ -1,4 +1,4 @@
-<meta charset="utf-8">
+﻿<meta charset="utf-8">
 <title>Agenda Bontaz</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1B2A5E">
@@ -153,6 +153,22 @@
   .acts button{border:1px solid var(--line);background:var(--card);font:inherit;font-size:12.5px;padding:4px 9px;border-radius:1px;cursor:pointer;color:var(--navy)}
   .acts button:hover{border-color:var(--navy)}
   .anexos{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+  #crmFiltros button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+  #crmTop{grid-template-columns:repeat(3,1fr)}
+  .crmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+  .crmcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--cS);padding:13px 15px}
+  .crmcard.bicicletas{border-top-color:var(--cB)}
+  .crmcard.diversos{border-top-color:var(--cD)}
+  .crmcard .head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .crmcard .t{font-weight:600;flex:1;min-width:140px}
+  .crmcard .stats{display:flex;gap:14px;margin:9px 0;font-size:12.5px;color:var(--steel)}
+  .crmcard .stats b{display:block;font-size:15px;color:var(--ink);font-weight:650}
+  .crmcard .contactos{margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px}
+  .crmcard .contactos div{margin:3px 0}
+  .crmcard .contactos a{color:var(--navy)}
+  .crmcard .ultimo{font-size:12.5px;color:var(--steel);margin-top:7px}
+  .crmcard .ultimo b{color:var(--ink);font-weight:600}
+  .crmcard .semdados{color:var(--steel);font-style:italic;font-size:12.5px}
   .anexos .an{font-size:13px;padding:3px 0;color:#243049}
   .anexos .an span{color:var(--steel);font-size:11.5px}
   .anexos .an.done{color:var(--steel);text-decoration:line-through}
@@ -322,6 +338,7 @@
       <button role="tab" id="t-dia" aria-selected="true">Agenda</button>
       <button role="tab" id="t-tarefas" aria-selected="false">Tarefas</button>
       <button role="tab" id="t-topicos" aria-selected="false">Tópicos</button>
+      <button role="tab" id="t-crm" aria-selected="false">CRM</button>
       <button role="tab" id="t-atas" aria-selected="false">Atas</button>
       <button role="tab" id="t-feiras" aria-selected="false">Feiras</button>
       <button role="tab" id="t-arquivo" aria-selected="false">Arquivo</button>
@@ -528,6 +545,22 @@
         </div>
         <div class="btnrow"><button class="cta" id="addBtn">Adicionar tópico</button></div>
       </div>
+    </section>
+
+    <!-- CRM -->
+    <section id="v-crm" class="hidden">
+      <div class="panel">
+        <h2>CRM <span class="c" id="crmC"></span></h2>
+        <p class="hint">Contactos, último contacto e valor esperado por cliente. Serve para trabalhar a carteira e para apresentar ao Benoit e à Marilyne.</p>
+        <div class="addrow" id="crmFiltros" style="margin:0 0 14px">
+          <button class="cta ghost" data-crmf="todos">Todos</button>
+          <button class="cta ghost" data-crmf="servicos">Serviços</button>
+          <button class="cta ghost" data-crmf="bicicletas">Bicicletas</button>
+        </div>
+        <div class="kpis" id="crmTop"></div>
+        <div id="crmGrid" class="crmgrid"></div>
+      </div>
+      <div class="panel" id="crmEditorHost"></div>
     </section>
 
     <!-- ATAS -->
@@ -781,7 +814,11 @@ function aplicarPack(p){
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[]});
   S.tarefas.forEach(t=>{if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
     if(t.nota===undefined)t.nota='';if(!t.prazo)t.prazo=today()});
-  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
+  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota='';
+    if(!Array.isArray(t.contactos))t.contactos=[];
+    if(!t.ultimoContacto)t.ultimoContacto={data:'',canal:'',assunto:''};
+    if(t.valorEsperado===undefined)t.valorEsperado=0;
+    if(t.rfqAbertas===undefined)t.rfqAbertas=0});
   M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId=''});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   S.seeded=true;
@@ -1093,7 +1130,11 @@ async function load(){
   S.seeded=true;
   S.tarefas.forEach(t=>{if(!t.prazo)t.prazo=today();if(t.nota===undefined)t.nota='';
     if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId=''});
-  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
+  S.topicos.forEach(t=>{if(t.nota===undefined)t.nota='';
+    if(!Array.isArray(t.contactos))t.contactos=[];
+    if(!t.ultimoContacto)t.ultimoContacto={data:'',canal:'',assunto:''};
+    if(t.valorEsperado===undefined)t.valorEsperado=0;
+    if(t.rfqAbertas===undefined)t.rfqAbertas=0});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   let m=await jget(K_MOM);if(!m)m=await jget(K_OLDM);
   if(m)M=m;M.atas=M.atas||[];
@@ -1550,6 +1591,90 @@ function renderTopics(){
   if(!l.length)box.innerHTML='<p class="empty">Sem tópicos.</p>';
   l.forEach(t=>box.appendChild(rowEl(t,false)));
 }
+
+/* ---------- CRM ---------- */
+let crmFiltro='todos';
+const CANAL={email:'Email',telefone:'Telefone',reuniao:'Reunião',presencial:'Presencial'};
+function crmLista(){
+  return S.topicos.filter(t=>t.estado!=='fechado'&&(crmFiltro==='todos'||t.dominio===crmFiltro));
+}
+function crmCardEl(t){
+  const d=document.createElement('div');d.className='crmcard '+t.dominio;
+  d.innerHTML='<div class="head"><span class="t">'+esc(t.titulo)+'</span>'+
+    '<span class="tag '+t.dominio+'">'+DOM[t.dominio]+'</span></div>'+
+    '<div class="stats"><div><b>'+eur(t.valorEsperado)+'</b>valor esperado</div>'+
+    '<div><b>'+(+t.rfqAbertas||0)+'</b>RFQ abertas</div></div>';
+  if(t.contactos.length){
+    const c=document.createElement('div');c.className='contactos';
+    t.contactos.forEach(p=>{
+      const bits=[esc(p.nome)];if(p.cargo)bits.push(esc(p.cargo));
+      let linha=bits.join(', ');
+      if(p.email)linha+=' · <a href="mailto:'+esc(p.email)+'">'+esc(p.email)+'</a>';
+      if(p.telefone)linha+=' · <a href="tel:'+esc(p.telefone)+'">'+esc(p.telefone)+'</a>';
+      const l=document.createElement('div');l.innerHTML=linha;c.appendChild(l);
+    });
+    d.appendChild(c);
+  } else {
+    const p=document.createElement('p');p.className='semdados';p.textContent='Sem contactos registados.';d.appendChild(p);
+  }
+  const uc=t.ultimoContacto;
+  const u=document.createElement('div');u.className='ultimo';
+  u.innerHTML=(uc&&uc.data)
+    ? 'Último contacto: <b>'+(CANAL[uc.canal]||uc.canal||'')+'</b>, '+esc(uc.data)+(uc.assunto?' — '+esc(uc.assunto):'')
+    : 'Sem registo de último contacto.';
+  d.appendChild(u);
+  const acts=document.createElement('div');acts.className='acts';
+  const b=document.createElement('button');b.textContent='Editar CRM';b.onclick=()=>crmEdit(t);
+  acts.appendChild(b);d.appendChild(acts);
+  return d;
+}
+function renderCRM(){
+  document.querySelectorAll('#crmFiltros button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.crmf===crmFiltro));
+  const l=crmLista();
+  document.getElementById('crmC').textContent=l.length;
+  const totV=l.reduce((s,t)=>s+(+t.valorEsperado||0),0);
+  const totR=l.reduce((s,t)=>s+(+t.rfqAbertas||0),0);
+  document.getElementById('crmTop').innerHTML=
+    kpiEl(l.length,'clientes na vista')+kpiEl(eur(totV),'valor esperado total')+kpiEl(totR,'RFQ abertas no total');
+  const grid=document.getElementById('crmGrid');grid.innerHTML='';
+  if(!l.length){grid.innerHTML='<p class="empty">Sem clientes neste filtro.</p>';return}
+  l.sort((a,b)=>(+b.valorEsperado||0)-(+a.valorEsperado||0)).forEach(t=>grid.appendChild(crmCardEl(t)));
+}
+function crmEdit(t){
+  const host=document.getElementById('crmEditorHost');
+  host.innerHTML='<h2>Editar CRM, '+esc(t.titulo)+'</h2>'+
+    '<div style="margin-top:6px"><label class="f">Contactos, um por linha. Formato: nome | cargo | email | telefone</label>'+
+    '<textarea id="crmContactos" class="mono" style="min-height:80px" placeholder="Ana Silva | Compras | ana@cliente.pt | 912345678"></textarea></div>'+
+    '<div class="grid3" style="margin-top:10px">'+
+    '<div><label class="f">Último contacto, canal</label><select id="crmCanal"><option value="">—</option>'+
+    Object.entries(CANAL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
+    '<div><label class="f">Data</label><input type="date" id="crmData"></div>'+
+    '<div><label class="f">Assunto, para procurar depois</label><input type="text" id="crmAssunto"></div></div>'+
+    '<div class="grid2" style="margin-top:10px">'+
+    '<div><label class="f">Valor esperado, €</label><input type="number" id="crmValor" min="0" step="1"></div>'+
+    '<div><label class="f">RFQ abertas</label><input type="number" id="crmRfq" min="0" step="1"></div></div>'+
+    '<div class="btnrow"><button class="cta" id="crmSave">Guardar</button><button class="cta ghost" id="crmCancel">Cancelar</button></div>';
+  host.querySelector('#crmContactos').value=t.contactos.map(p=>[p.nome,p.cargo,p.email,p.telefone].join(' | ')).join('\n');
+  host.querySelector('#crmCanal').value=t.ultimoContacto.canal||'';
+  host.querySelector('#crmData').value=t.ultimoContacto.data||'';
+  host.querySelector('#crmAssunto').value=t.ultimoContacto.assunto||'';
+  host.querySelector('#crmValor').value=t.valorEsperado||0;
+  host.querySelector('#crmRfq').value=t.rfqAbertas||0;
+  host.querySelector('#crmCancel').onclick=()=>{host.innerHTML=''};
+  host.querySelector('#crmSave').onclick=()=>{
+    t.contactos=host.querySelector('#crmContactos').value.split('\n').map(s=>s.trim()).filter(Boolean).map(l=>{
+      const[nome,cargo,email,telefone]=l.split('|').map(s=>(s||'').trim());
+      return{nome:nome||'',cargo:cargo||'',email:email||'',telefone:telefone||''};
+    });
+    t.ultimoContacto={canal:host.querySelector('#crmCanal').value,data:host.querySelector('#crmData').value,
+      assunto:host.querySelector('#crmAssunto').value.trim()};
+    t.valorEsperado=+host.querySelector('#crmValor').value||0;
+    t.rfqAbertas=+host.querySelector('#crmRfq').value||0;
+    save();host.innerHTML='';renderAll();
+  };
+  host.scrollIntoView({block:'center'});
+}
+document.querySelectorAll('#crmFiltros button').forEach(b=>b.onclick=()=>{crmFiltro=b.dataset.crmf;renderCRM()});
 function renderMoms(){
   const l=[...M.atas].sort((a,b)=>a.data<b.data?1:-1);
   document.getElementById('momC').textContent=l.length;
@@ -1700,77 +1825,7 @@ function guardarKpi(){
 /* ================= FEIRAS ================= */
 const FCAT={ciclismo:'Ciclismo e produto',logistica:'Logística e frota',mobilidade:'Mobilidade e smart city',automotive:'Automotive e ensaios',servicos:'Subcontratação e serviços',aeroespacial:'Aeroespacial e defesa'};
 const FEST={avaliar:'a avaliar',ir:'decidido ir',inscrito:'inscrito',fui:'fui',passou:'passou',nao:'descartado'};
-const SEED_FEIRAS=[
- // setembro a dezembro 2026
- {n:'IAA Transportation e Conferência Radlogistik',i:'2026-09-15',f:'2026-09-20',l:'Hannover, Alemanha',p:'EU',c:'automotive',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Maior feira europeia de veículos comerciais, integra a 7.ª Conferência Nacional de Radlogistik a 18 de setembro. Liga pesados e logística ciclável. Datas da feira a confirmar.',
-  ver:['Confirmar datas exatas da feira junto do organizador','Decidir se a conferência de Radlogistik justifica o dia sozinho','Sobrepõe-se ao Sea Otter Europe, escolher um']},
- {n:'Sea Otter Europe',i:'2026-09-18',f:'2026-09-20',l:'Girona, Espanha',p:'ES',c:'ciclismo',d:'bicicletas',e:'avaliar',
-  desc:'Maior festival de ciclismo ibérico, com zona dedicada a e-cargo bikes e mobilidade urbana. A melhor porta de entrada no mercado espanhol.',
-  ver:['Mapear fabricantes ibéricos de cargo e e-bike presentes','Ver que travões usam e quem é o fornecedor atual','Perceber se há operadores de frota espanhóis presentes']},
- {n:'Last Mile Summit',i:'2026-09-23',f:'2026-09-23',l:'Arriba Guincho, Cascais',p:'PT',c:'logistica',d:'bicicletas',e:'avaliar',
-  desc:'Organizado pela Delivery Express e pela PwC. Micrologística urbana, sustentabilidade e inovação. Evento pequeno mas de qualidade, bom para networking dirigido.',
-  ver:['Identificar operadores de frota nacionais além da Ciclo Logística','Confirmar presença do contacto habitual do setor']},
- {n:'International Cargo Bike Festival',i:'2026-10-12',f:'2026-10-13',l:'Utrecht, Países Baixos',p:'EU',c:'ciclismo',d:'bicicletas',e:'avaliar',
-  desc:'A feira mais focada em cargo bikes da Europa e a mais importante do ano para o M2300.',
-  ver:['Ver que travões usam os fabricantes presentes (Urban Arrow, Douze, Riese e Müller)','Confirmar se a Magura está presente e com que gama','Recolher contactos de cinco fabricantes sem fornecedor hidráulico definido','Avaliar custo e prazo de presença como expositor em 2027']},
- {n:'Fleet Europe Days',i:'2026-10-27',f:'2026-10-28',l:'FIL, Lisboa',p:'PT',c:'logistica',d:'bicicletas',e:'avaliar',
-  desc:'Mais de 1.200 gestores de frota de 35 países, em Lisboa. Público de frota é comprador de volume.',ver:[]},
- {n:'Vehicle Tech Week North America',i:'2026-10-27',f:'2026-10-29',l:'Novi, Michigan, EUA',p:'MUNDO',c:'automotive',d:'servicos',e:'avaliar',
-  desc:'Edição mais relevante para as aplicações Bontaz de powertrain e chassis, mas nos EUA. Decisão à parte por ser viagem transatlântica.',ver:[]},
- {n:'Smart City Expo World Congress',i:'2026-11-03',f:'2026-11-05',l:'Fira Barcelona, Espanha',p:'ES',c:'mobilidade',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Maior evento mundial de smart cities, mais de 25.000 participantes. Municípios são compradores de frotas de cargo bikes, ângulo institucional.',ver:['Confirmar datas exatas']},
- {n:'Thermal Management Expo Europe',i:'2026-11-10',f:'2026-11-12',l:'Europa, a confirmar',p:'EU',c:'automotive',d:'servicos',prev:1,e:'avaliar',
-  desc:'A feira mais diretamente relevante para os produtos core da Bontaz, gestão térmica. Datas e local a confirmar junto do organizador.',
-  ver:['Confirmar datas e local','Decidir visita ou stand','Verificar se o grupo já tem presença prevista']},
- {n:'Assembleia Geral AED Cluster Portugal',i:'2026-11-17',f:'2026-11-17',l:'Portugal, a confirmar',p:'PT',c:'aeroespacial',d:'diversos',prev:1,e:'avaliar',
-  desc:'Tarde inteira de B2B, mais de 150 reuniões na edição anterior e 102 entidades presentes. É o momento de maior densidade de contactos do ano no setor aeroespacial. Requer adesão ao cluster.',
-  ver:['Confirmar se a adesão é aprovada antes de novembro','Confirmar data exata','Preparar pitch de duas frentes: ensaios e metrologia']},
- {n:'MRO Europe',i:'2026-11-17',f:'2026-11-19',l:'Europa, a confirmar',p:'EU',c:'aeroespacial',d:'diversos',prev:1,e:'avaliar',
-  desc:'Manutenção e reparação aeronáutica, com stand nacional organizado pela AED.',ver:['Confirmar se há lugar no stand nacional']},
- {n:'Web Summit',i:'2026-11-09',f:'2026-11-12',l:'Lisboa',p:'PT',c:'servicos',d:'diversos',e:'avaliar',
-  desc:'Menos para automóvel puro, mas útil para os ângulos Bontaz as a Service, ferramenta de cotações com IA e testing para data centers.',ver:[]},
- {n:'Space Tech Expo',i:'2026-11-18',f:'2026-11-19',l:'Bremen, Alemanha',p:'EU',c:'aeroespacial',d:'diversos',prev:1,e:'avaliar',desc:'Via AED. Confirmar datas.',ver:[]},
- {n:'Conferência GICA',i:'2026-11-24',f:'2026-11-24',l:'Portugal',p:'PT',c:'aeroespacial',d:'diversos',prev:1,e:'avaliar',desc:'Via AED. Confirmar data e local.',ver:[]},
- {n:'SUBCONTRATAÇÃO',i:'2026-11-25',f:'2026-11-27',l:'Exposalão, Batalha',p:'PT',c:'servicos',d:'servicos',prev:1,e:'avaliar',
-  desc:'A feira mais on-target para as capacidades core: fundição, maquinação, moldes, matrizes, tratamento de superfícies e soldadura. Está no coração da região dos moldes. Datas a confirmar no Exposalão.',
-  ver:['Confirmar datas no Exposalão','Avaliar stand contra visita simples','Mapear concorrentes nacionais de metrologia e ensaios presentes']},
- // 2027
- {n:'Velofollies',i:'2027-01-15',f:'2027-01-17',l:'Kortrijk, Bélgica',p:'EU',c:'ciclismo',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Grande feira de início de ano, com categoria cargo. Urban Arrow, Douze e i:SY confirmados na edição de 2026.',ver:[]},
- {n:'SITL Paris',i:'2027-03-23',f:'2027-03-25',l:'Paris, França',p:'EU',c:'logistica',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Referência de logística e last-mile em França, mercado onde já há tração com CargoNautes, Galian e Moustache.',ver:[]},
- {n:'Motortec Automechanika Madrid',i:'2027-04-07',f:'2027-04-10',l:'IFEMA, Madrid',p:'ES',c:'servicos',d:'servicos',e:'avaliar',
-  desc:'A grande feira ibérica de componentes, engenharia e acessórios automóvel. B2B forte, boa para prospeção de novos clientes de serviços.',ver:[]},
- {n:'SPEZI',i:'2027-04-24',f:'2027-04-25',l:'Freiburg, Alemanha',p:'EU',c:'ciclismo',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Feira especializada em bicicletas especiais e cargo. Hase Bikes e HP Velotechnik são alvos naturais da pipeline.',ver:[]},
- {n:'Empack e Logistics & Automation Porto',i:'2027-04-28',f:'2027-04-29',l:'Exponor, Matosinhos',p:'PT',c:'logistica',d:'bicicletas',e:'avaliar',
-  desc:'À porta de casa. Last-mile e intralogística no Porto, a poucos quilómetros da BCTP. Data confirmada. Baixo custo, alto valor de rede local.',
-  ver:['Avaliar stand pequeno, o custo é baixo','Convidar clientes locais a passar pelo stand']},
- {n:'Portugal Smart Cities Summit',i:'2027-05-11',f:'2027-05-13',l:'FIL, Lisboa',p:'PT',c:'mobilidade',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Maior marketplace nacional de cidades inteligentes, com sessões de logística urbana e zona Move. Palco institucional em Portugal.',ver:[]},
- {n:'DELIVER Europe',i:'2027-06-03',f:'2027-06-04',l:'Amesterdão, Países Baixos',p:'EU',c:'logistica',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Mais de 2.000 líderes de retalho e supply chain, com reuniões um para um pré-agendadas. Só por convite, pedir acesso com antecedência.',
-  ver:['Pedir acesso com pelo menos três meses de antecedência']},
- {n:'SIL Barcelona',i:'2027-06-08',f:'2027-06-10',l:'Fira Barcelona, Espanha',p:'ES',c:'logistica',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Maior feira de logística do Sul da Europa, com forte eixo de last-mile. Ponte natural entre mercado ibérico e frotas.',ver:[]},
- {n:'Global Mobility Call',i:'2027-06-08',f:'2027-06-10',l:'IFEMA, Madrid',p:'ES',c:'mobilidade',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Congresso de mobilidade sustentável com delegações de Amazon, DHL, Decathlon e La Poste. Logística urbana no centro.',ver:[]},
- {n:'Vehicle Tech Week Europe, com Automotive Testing Expo',i:'2027-06-22',f:'2027-06-24',l:'Messe Stuttgart, Alemanha',p:'EU',c:'automotive',d:'servicos',prev:1,e:'avaliar',
-  desc:'O evento de referência mundial de ensaio, desenvolvimento e validação automóvel, e âncora de credibilidade para a narrativa Tier 1. Em 2026 foi de 23 a 25 de junho.',
-  ver:['Ver interfaces CAN para o caso DCDC: dSPACE, Intrepid, ETAS, EXXOTEST','Benchmark de laboratórios concorrentes: VISPIRON, DEKRA, ATS, CSI','Avaliar passe de visitante comercial contra passe de comprador']},
- {n:'Eurobike',i:'2027-09-01',f:'2027-09-03',l:'Frankfurt, Alemanha',p:'EU',c:'ciclismo',d:'bicicletas',e:'avaliar',
-  desc:'O evento do ano no ciclismo, data confirmada. Momento para decidir presença como expositor, e o planeamento arranca cerca de doze meses antes.',
-  ver:['Decidir presença como expositor até setembro de 2026','Orçamentar stand e material']},
- {n:'Sea Otter Europe',i:'2027-09-17',f:'2027-09-19',l:'Girona, Espanha',p:'ES',c:'ciclismo',d:'bicicletas',prev:1,e:'avaliar',
-  desc:'Repetição do ponto de entrada ibérico, bom para consolidar contactos espanhóis do ano anterior.',ver:[]},
- // referência de cadência
- {n:'Eurobike',i:'2026-06-24',f:'2026-06-27',l:'Frankfurt, Alemanha',p:'EU',c:'ciclismo',d:'bicicletas',e:'passou',desc:'Referência de cadência.',ver:[]},
- {n:'Vehicle Tech Week Europe',i:'2026-06-23',f:'2026-06-25',l:'Messe Stuttgart, Alemanha',p:'EU',c:'automotive',d:'servicos',e:'fui',
-  desc:'Visita feita com um dia no recinto. Briefing preparado, com rota mapeada e alvos por stand.',ver:[]},
- {n:'SIL Barcelona',i:'2026-06-03',f:'2026-06-05',l:'Fira Barcelona, Espanha',p:'ES',c:'logistica',d:'bicicletas',e:'passou',desc:'Referência de cadência.',ver:[]},
- {n:'Empack e Logistics & Automation Porto',i:'2026-04-22',f:'2026-04-23',l:'Exponor, Matosinhos',p:'PT',c:'logistica',d:'bicicletas',e:'passou',desc:'Referência de cadência.',ver:[]}
-];
+const SEED_FEIRAS=[];
 function seedFeiras(){
   return SEED_FEIRAS.map((s,i)=>({id:'f'+i,nome:s.n,inicio:s.i,fim:s.f||s.i,local:s.l,pais:s.p,
     categoria:s.c,dominio:s.d,previsto:!!s.prev,estado:s.e,descricao:s.desc||'',topicoId:'',custo:'',
@@ -2168,8 +2223,8 @@ async function pedirPrioridade(){
 
 /* ---------- render geral e eventos ---------- */
 function renderAll(){renderBell();renderCal();renderSsi();renderDay();renderTasks();
-  renderArquivo();renderTopics();renderMoms();renderFeiras();renderMes();renderPainel();renderDados()}
-const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes'};
+  renderArquivo();renderTopics();renderCRM();renderMoms();renderFeiras();renderMes();renderPainel();renderDados()}
+const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes'};
 function go(name){tab=name;
   document.getElementById('v-busca').classList.add('hidden');
   Object.entries(VIEWS).forEach(([k,v])=>{
