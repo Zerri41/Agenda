@@ -196,6 +196,7 @@
   .fmeet .seg{margin:6px 0 0;font-size:13px;color:var(--done);font-weight:600}
   .cal .fdot{position:absolute;right:5px;bottom:6px;width:0;height:0;
     border-left:7px solid transparent;border-bottom:7px solid var(--signal)}
+  .cal .vdot{position:absolute;left:5px;bottom:6px;width:7px;height:7px;border-radius:50%;background:var(--visita)}
   .feibar{background:#FFF8E2;border-left:4px solid var(--signal);padding:9px 12px;margin:0 0 14px;font-size:13.5px}
   .feibar b{font-weight:650}
   #syncBar{display:none;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px;
@@ -225,6 +226,7 @@
   input[type=text],input[type=date],input[type=search],input[type=number],select,textarea{
     font:inherit;padding:8px 9px;border:1px solid var(--line);border-radius:1px;background:var(--card);color:var(--ink);width:100%}
   input:focus,select:focus,textarea:focus{outline:2px solid var(--navy);outline-offset:-1px;border-color:var(--navy)}
+  input.auto{background:#F0F2F6;color:var(--steel);cursor:not-allowed}
   label.f{display:block;font-size:12.5px;color:var(--steel);margin-bottom:3px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
@@ -443,6 +445,7 @@
           <span><i style="background:var(--cD)"></i>Diversos, sexta</span>
           <span><i style="background:var(--navy);width:7px;height:7px;border-radius:50%"></i>tem ata</span>
           <span><i style="background:var(--signal);width:8px;height:8px"></i>feira</span>
+          <span><i style="background:var(--visita);width:7px;height:7px;border-radius:50%"></i>visita a cliente</span>
         </div>
         <div class="strip">
           <span>Tópicos ativos <b id="sTop">0/5</b></span>
@@ -646,11 +649,12 @@
     <section id="v-dados" class="hidden">
       <div class="panel">
         <h2>Alimentar o painel</h2>
-        <p class="hint">Os números de execução pessoal saem sozinhos das tarefas e dos rituais. RFQ recebidos, cotações enviadas, ganhas, perdidas, sem resposta e em carteira podem vir do CRM — clica em "Preencher a partir do CRM" e confirma antes de guardar. O resto (reuniões, clientes, adjudicado por área) continua manual.</p>
+        <p class="hint">Os números de execução pessoal saem sozinhos das tarefas e dos rituais. RFQ recebidos, cotações enviadas, ganhas, perdidas, sem resposta e em carteira vêm sozinhos do CRM quando há RFQs nesse mês, e ficam bloqueados a cinzento — usa "Editar manualmente" se precisares de corrigir algo. O resto (reuniões, clientes, adjudicado por área) continua manual.</p>
+        <div class="hint" id="kpAutoMsg" style="display:none;background:#F0F2F6;padding:7px 11px;margin:0 0 12px"></div>
         <div class="addrow" style="margin:0 0 16px">
           <select id="kpSel" style="width:200px;flex:none"></select>
           <button class="cta ghost" id="kpCopy" style="margin:0">Copiar do mês anterior</button>
-          <button class="cta ghost" id="kpFromCrm" style="margin:0">Preencher a partir do CRM</button>
+          <button class="cta ghost" id="kpFromCrm" style="margin:0">Atualizar a partir do CRM agora</button>
         </div>
 
         <h3 class="sub">Procura e cotação</h3>
@@ -1407,7 +1411,8 @@ function renderCal(){
     b.innerHTML='<span class="n">'+d.getDate()+'</span>'+
       (open.length?'<span class="k'+(k<today()?' late':'')+'">'+open.length+' tarefa'+(open.length>1?'s':'')+'</span>':'')+
       (M.atas.some(a=>a.data===k)?'<span class="mdot"></span>':'')+
-      (feiraNoDia(k).length?'<span class="fdot"></span>':'')+
+      (feiraNoDia(k).some(f=>(f.tipo||'feira')==='feira')?'<span class="fdot"></span>':'')+
+      (feiraNoDia(k).some(f=>f.tipo==='visita')?'<span class="vdot"></span>':'')+
       '<span class="bar'+(wknd?'':' '+PLANO[wd].dom)+'"></span>';
     const ff=feiraNoDia(k);
     b.title=DIAS[wd]+', '+d.getDate()+' '+MS[d.getMonth()]+(wknd?'':' · '+DOM[PLANO[wd].dom])+
@@ -1943,7 +1948,24 @@ function renderDados(){
   const opts=[...new Set([...ms,kpMes,nextYm(ym(new Date()))])].sort().reverse();
   sel.innerHTML=opts.map(m=>'<option value="'+m+'"'+(m===kpMes?' selected':'')+'>'+ymLabel(m)+'</option>').join('');
   const k=K(kpMes);
-  KF.forEach(f=>{const el=document.getElementById('k_'+f);if(el)el.value=k[f]!==undefined?k[f]:''});
+  const crm=crmKpisMes(kpMes);
+  const auto=crm.rfq>0&&!k._manual;
+  KF.forEach(f=>{
+    const el=document.getElementById('k_'+f);if(!el)return;
+    if(auto&&CRM_AUTO_FIELDS.includes(f)){el.value=crm[f];el.readOnly=true;el.classList.add('auto')}
+    else{el.value=k[f]!==undefined?k[f]:'';el.readOnly=false;el.classList.remove('auto')}
+  });
+  const msg=document.getElementById('kpAutoMsg');
+  if(crm.rfq>0){
+    msg.style.display='';
+    msg.innerHTML=auto
+      ?'Preenchido automaticamente a partir do CRM: '+crm.rfq+' RFQ este mês. <button class="cta ghost" id="kpUnlock" style="margin-left:8px">Editar manualmente</button>'
+      :'Edição manual ligada para '+ymLabel(kpMes)+'. <button class="cta ghost" id="kpRelock" style="margin-left:8px">Voltar ao automático do CRM</button>';
+    const ub=document.getElementById('kpUnlock');if(ub)ub.onclick=()=>{S.kpis[kpMes]=Object.assign({},k,{_manual:true});save();renderDados()};
+    const rb=document.getElementById('kpRelock');if(rb)rb.onclick=()=>{const o2=Object.assign({},k);delete o2._manual;S.kpis[kpMes]=o2;save();renderDados()};
+  } else {
+    msg.style.display='none';
+  }
   const o=S.obj||{};
   document.getElementById('k_obj').value=o.ano||'';
   document.getElementById('k_objC').value=o.conv||'';
@@ -1952,6 +1974,7 @@ function renderDados(){
 function guardarKpi(){
   const o={};KF.forEach(f=>{const el=document.getElementById('k_'+f);
     if(el&&el.value!=='')o[f]=parseFloat(el.value)});
+  if(K(kpMes)._manual)o._manual=true;
   S.kpis[kpMes]=o;save();renderPainel();renderDados();
   const m=document.getElementById('kpMsg');m.textContent=ymLabel(kpMes)+' guardado.';
   setTimeout(()=>m.textContent='',2500);
@@ -2442,6 +2465,7 @@ document.getElementById('kpCopy').onclick=()=>{
   const pv=K(prevYm(kpMes));
   if(!Object.keys(pv).length){alert('O mês anterior está vazio.');return}
   KF.forEach(f=>{const el=document.getElementById('k_'+f);if(el)el.value=pv[f]!==undefined?pv[f]:''})};
+const CRM_AUTO_FIELDS=['rfq','cotN','cotV','gan','ganV','per','sr','bkN','bkV'];
 function crmKpisMes(mes){
   const doMes=[];S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if((r.data||'').slice(0,7)===mes)doMes.push(r)}));
   const enviadas=doMes.filter(r=>['enviada','ganha','perdida'].includes(estadoRfq(r.estado)));
