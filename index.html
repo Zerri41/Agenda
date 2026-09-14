@@ -14,7 +14,7 @@
     --ink:#0F172A; --navy:#1B2A5E; --steel:#5C6A85;
     --paper:#E9ECF2; --card:#FFFFFF; --line:#C6CDDB;
     --signal:#F2B300; --done:#1B6F62; --warn:#A8341F; --soon:#9A6A00;
-    --cS:#4A6BB8; --cB:#3D8B75; --cD:#B08A2E;
+    --cS:#4A6BB8; --cB:#3D8B75; --cD:#B08A2E; --visita:#7B4FA0;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);
@@ -186,6 +186,9 @@
   .row.fei.passou{opacity:.55}
   .row.fei.nao{opacity:.4}
   .row.fei.ir,.row.fei.inscrito{background:#F5FAF8}
+  .row.fei.visita{border-left:4px solid var(--visita);padding-left:11px}
+  .tag.tipo-visita{background:#EAE1F5;color:#4A2E7A}
+  .tag.tipo-feira{background:#E4E8F0}
   .fmeet{border-left:3px solid var(--navy);background:var(--card);padding:9px 11px;margin-bottom:8px}
   .fmeet .mh{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
   .fmeet .mh b{font-weight:600}
@@ -598,9 +601,14 @@
     <!-- FEIRAS -->
     <section id="v-feiras" class="hidden">
       <div class="panel">
-        <h2>Feiras e eventos <span class="c" id="feiC"></span></h2>
-        <p class="hint">Cada feira guarda o que queres ver, as reuniões que tiveste com marcas e o registo do que foi discutido. Os dias das feiras aparecem marcados no calendário da agenda.</p>
+        <h2>Feiras, eventos e visitas a clientes <span class="c" id="feiC"></span></h2>
+        <p class="hint">Cada feira ou visita guarda o que queres ver, as reuniões que tiveste e o registo do que foi discutido. As visitas a cliente aparecem com uma cor diferente. Os dias aparecem marcados no calendário da agenda.</p>
         <div class="addrow" id="feiFiltros" style="margin:0 0 14px">
+          <select id="fTipo" style="width:auto;flex:none">
+            <option value="todos">Feiras e visitas</option>
+            <option value="feira">Só feiras/eventos</option>
+            <option value="visita">Só visitas a clientes</option>
+          </select>
           <select id="fPais" style="width:auto;flex:none">
             <option value="todos">Todas as zonas</option>
             <option value="ib">Só Portugal e Espanha</option>
@@ -613,6 +621,7 @@
             <option value="todas">Todas</option>
           </select>
           <button class="cta ghost" id="feiNova" style="margin:0">Nova feira</button>
+          <button class="cta ghost" id="feiNovaVisita" style="margin:0">Nova visita a cliente</button>
           <button class="cta ghost" id="feiDl" style="margin:0">Descarregar .md</button>
         </div>
         <div id="feiList"></div>
@@ -637,10 +646,11 @@
     <section id="v-dados" class="hidden">
       <div class="panel">
         <h2>Alimentar o painel</h2>
-        <p class="hint">Os números de execução pessoal saem sozinhos das tarefas e dos rituais. Os números comerciais vêm do registo de RFQ e do Connect, por isso tens de os passar para aqui uma vez por mês, no fecho. Cinco minutos, na sexta-feira do fecho do mês.</p>
+        <p class="hint">Os números de execução pessoal saem sozinhos das tarefas e dos rituais. RFQ recebidos, cotações enviadas, ganhas, perdidas, sem resposta e em carteira podem vir do CRM — clica em "Preencher a partir do CRM" e confirma antes de guardar. O resto (reuniões, clientes, adjudicado por área) continua manual.</p>
         <div class="addrow" style="margin:0 0 16px">
           <select id="kpSel" style="width:200px;flex:none"></select>
           <button class="cta ghost" id="kpCopy" style="margin:0">Copiar do mês anterior</button>
+          <button class="cta ghost" id="kpFromCrm" style="margin:0">Preencher a partir do CRM</button>
         </div>
 
         <h3 class="sub">Procura e cotação</h3>
@@ -717,11 +727,14 @@
       </div>
       <div class="panel">
         <h2>Relatório e nota mensal</h2>
+        <p class="hint">Isto fica sempre aqui, é o teu registo do mês. Não precisas de exportar nada — quando quiseres apresentar a Benoit e à Mary, gera antes o prompt em baixo e cola numa conversa à parte com o Claude, que te devolve o relatório já escrito e pronto a apresentar.</p>
         <textarea id="rep" class="mono" style="min-height:340px"></textarea>
         <div class="btnrow">
           <button class="cta ghost" id="copyBtn">Copiar</button>
           <button class="cta ghost" id="dlBtn">Descarregar .md</button>
+          <button class="cta" id="promptMesBtn">Gerar prompt para o Claude</button>
         </div>
+        <div id="promptMesOut"></div>
       </div>
       <div class="panel">
         <h2>Dados e cópia de segurança</h2>
@@ -832,12 +845,13 @@ function aplicarPack(p){
   S=p.core;M=p.moms||{atas:[]};
   S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];M.atas=M.atas||[];
   if(!S.feiras.length)S.feiras=seedFeiras();
-  S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[]});
+  S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[];f.tipo=f.tipo||'feira'});
   S.tarefas.forEach(t=>{if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
     if(t.nota===undefined)t.nota='';if(!t.prazo)t.prazo=today()});
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
-    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento=''});
+    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
+    c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado)})});
   M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId=''});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   S.seeded=true;
@@ -1145,13 +1159,14 @@ async function load(){
     })}}
   if(!S.feiras.length)S.feiras=seedFeiras();
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[];
-    if(f.previsto===undefined)f.previsto=false});
+    if(f.previsto===undefined)f.previsto=false;f.tipo=f.tipo||'feira'});
   S.seeded=true;
   S.tarefas.forEach(t=>{if(!t.prazo)t.prazo=today();if(t.nota===undefined)t.nota='';
     if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId=''});
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
-    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento=''});
+    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
+    c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado)})});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   let m=await jget(K_MOM);if(!m)m=await jget(K_OLDM);
   if(m)M=m;M.atas=M.atas||[];
@@ -1615,6 +1630,11 @@ const CANAL={email:'Email',telefone:'Telefone',reuniao:'Reunião',presencial:'Pr
 function crmHash(nome){let h=0;for(let i=0;i<nome.length;i++)h=(h*31+nome.charCodeAt(i))>>>0;return h%360}
 const crmDeptBg=nome=>'hsl('+crmHash(nome)+',55%,88%)';
 const crmDeptFg=nome=>'hsl('+crmHash(nome)+',60%,26%)';
+const ESTADO_RFQ={recebida:'Recebida',enviada:'Cotação enviada',ganha:'Ganha',perdida:'Perdida',semresposta:'Sem resposta'};
+const ESTADO_RFQ_COR={recebida:'#E4E8F0',enviada:'#DCE4F5',ganha:'#DCEDE6',perdida:'#FBE0DB',semresposta:'#F3E7CE'};
+function estadoRfq(v){v=(v||'').toLowerCase().trim();
+  if(v.startsWith('env'))return'enviada';if(v.startsWith('gan'))return'ganha';if(v.startsWith('perd'))return'perdida';
+  if(v.startsWith('sem'))return'semresposta';return'recebida'}
 function crmLista(){
   return S.crm.filter(c=>crmFiltro==='todos'||c.dominio===crmFiltro);
 }
@@ -1649,8 +1669,10 @@ function crmCardEl(c){
   if((c.rfqs||[]).length){
     const rb=document.createElement('div');rb.className='rfqs';
     [...c.rfqs].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1).forEach(r=>{
+      const est=estadoRfq(r.estado);
       const l=document.createElement('div');l.className='ln';
-      l.innerHTML='<span>'+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small></span><b>'+eur(r.valor)+'</b>';
+      l.innerHTML='<span>'+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small> '+
+        '<span class="depbadge" style="background:'+ESTADO_RFQ_COR[est]+'">'+ESTADO_RFQ[est]+'</span></span><b>'+eur(r.valor)+'</b>';
       rb.appendChild(l);
     });
     d.appendChild(rb);
@@ -1680,7 +1702,7 @@ function crmMensal(lista){
   const porMes={};
   lista.forEach(c=>(c.rfqs||[]).forEach(r=>{
     const m=(r.data||'').slice(0,7)||'sem-data';
-    (porMes[m]=porMes[m]||[]).push({descricao:r.descricao,valor:r.valor,data:r.data,cliente:c.nome});
+    (porMes[m]=porMes[m]||[]).push({descricao:r.descricao,valor:r.valor,data:r.data,cliente:c.nome,estado:estadoRfq(r.estado)});
   }));
   const meses=Object.keys(porMes).sort().reverse();
   if(!meses.length){
@@ -1691,7 +1713,8 @@ function crmMensal(lista){
         const arr=[...porMes[m]].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1);
         const tot=arr.reduce((s,r)=>s+(+r.valor||0),0);
         return '<div class="mesgrupo"><h3>'+(m==='sem-data'?'Sem data':ymLabel(m))+' — '+arr.length+' RFQ'+(arr.length>1?'s':'')+', '+eur(tot)+'</h3>'+
-          arr.map(r=>'<div class="ln"><span>'+esc(r.cliente)+', '+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small></span><b>'+eur(r.valor)+'</b></div>').join('')+
+          arr.map(r=>'<div class="ln"><span>'+esc(r.cliente)+', '+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small> '+
+            '<span class="depbadge" style="background:'+ESTADO_RFQ_COR[r.estado]+'">'+ESTADO_RFQ[r.estado]+'</span></span><b>'+eur(r.valor)+'</b></div>').join('')+
           '</div>';
       }).join('');
   }
@@ -1736,8 +1759,8 @@ function crmEdit(c){
     Object.entries(CANAL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
     '<div><label class="f">Data</label><input type="date" id="crmData"></div>'+
     '<div><label class="f">Assunto, para procurar depois</label><input type="text" id="crmAssunto"></div></div>'+
-    '<div style="margin-top:10px"><label class="f">RFQs, uma por linha. Formato: descrição | valor | data aaaa-mm-dd</label>'+
-    '<textarea id="crmRfqs" class="mono" style="min-height:70px" placeholder="Cotação linha travagem M2300 | 250000 | 2026-09-10"></textarea></div>'+
+    '<div style="margin-top:10px"><label class="f">RFQs, uma por linha. Formato: descrição | valor | data aaaa-mm-dd | estado (recebida, enviada, ganha, perdida, sem resposta)</label>'+
+    '<textarea id="crmRfqs" class="mono" style="min-height:70px" placeholder="Cotação linha travagem M2300 | 250000 | 2026-09-10 | enviada"></textarea></div>'+
     '<div style="margin-top:10px"><label class="f">Ligar a um tópico existente, opcional</label>'+
     '<div class="addrow"><select id="crmTopSel"></select><button class="cta ghost" id="crmTopAdd">Ligar</button></div>'+
     '<div id="crmTopLinked" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div></div>'+
@@ -1749,7 +1772,7 @@ function crmEdit(c){
   host.querySelector('#crmCanal').value=c.ultimoContacto.canal||'';
   host.querySelector('#crmData').value=c.ultimoContacto.data||'';
   host.querySelector('#crmAssunto').value=c.ultimoContacto.assunto||'';
-  host.querySelector('#crmRfqs').value=(c.rfqs||[]).map(r=>[r.descricao,r.valor,r.data].join(' | ')).join('\n');
+  host.querySelector('#crmRfqs').value=(c.rfqs||[]).map(r=>[r.descricao,r.valor,r.data,ESTADO_RFQ[estadoRfq(r.estado)]].join(' | ')).join('\n');
   fillTopSelect(host.querySelector('#crmTopSel'),'','Escolhe um tópico...');
   crmRefreshLinked(c,host);
   host.querySelector('#crmTopAdd').onclick=()=>{
@@ -1771,8 +1794,8 @@ function crmEdit(c){
     c.ultimoContacto={canal:host.querySelector('#crmCanal').value,data:host.querySelector('#crmData').value,
       assunto:host.querySelector('#crmAssunto').value.trim()};
     c.rfqs=host.querySelector('#crmRfqs').value.split('\n').map(s=>s.trim()).filter(Boolean).map((l,i)=>{
-      const[descricao,valor,data]=l.split('|').map(s=>(s||'').trim());
-      return{id:'r'+Date.now()+'_'+i,descricao:descricao||'',valor:+valor||0,data:data||''};
+      const[descricao,valor,data,estado]=l.split('|').map(s=>(s||'').trim());
+      return{id:'r'+Date.now()+'_'+i,descricao:descricao||'',valor:+valor||0,data:data||'',estado:estadoRfq(estado)};
     });
     save();host.innerHTML='';renderAll();
   };
@@ -1957,7 +1980,7 @@ function fmtRange(f){
   const a=(+d1)+(m1!==m2||y1!==y2?' '+MS[+m1-1]:'');
   return f.inicio===f.fim?(+d1)+' '+MS[+m1-1]+' '+y1:a+' a '+(+d2)+' '+MS[+m2-1]+' '+y2;
 }
-let fFiltro={pais:'todos',cat:'todas',est:'ativas'};
+let fFiltro={pais:'todos',cat:'todas',est:'ativas',tipo:'todos'};
 function renderFeiras(){
   S.feiras=S.feiras||[];
   const box=document.getElementById('feiList');box.innerHTML='';
@@ -1967,10 +1990,12 @@ function renderFeiras(){
     fs.querySelector('#fPais').onchange=e=>{fFiltro.pais=e.target.value;renderFeiras()};
     fs.querySelector('#fCat').onchange=e=>{fFiltro.cat=e.target.value;renderFeiras()};
     fs.querySelector('#fEst').onchange=e=>{fFiltro.est=e.target.value;renderFeiras()};
+    fs.querySelector('#fTipo').onchange=e=>{fFiltro.tipo=e.target.value;renderFeiras()};
     fs.querySelector('#fCat').innerHTML='<option value="todas">Todas as categorias</option>'+
       Object.entries(FCAT).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
   }
   let l=[...S.feiras].sort((a,b)=>a.inicio<b.inicio?-1:1);
+  if(fFiltro.tipo!=='todos')l=l.filter(f=>(f.tipo||'feira')===fFiltro.tipo);
   if(fFiltro.pais==='ib')l=l.filter(f=>f.pais==='PT'||f.pais==='ES');
   if(fFiltro.cat!=='todas')l=l.filter(f=>f.categoria===fFiltro.cat);
   if(fFiltro.est==='ativas')l=l.filter(f=>f.fim>=today()&&f.estado!=='nao');
@@ -1987,9 +2012,10 @@ function renderFeiras(){
 }
 function feiraEl(f){
   const est=feiraEstadoAuto(f),dd=dias_ate(f);
-  const div=document.createElement('div');div.className='row fei '+est;
+  const div=document.createElement('div');div.className='row fei '+est+' '+(f.tipo||'feira');
   const prox=est!=='passou'&&dd>=0&&dd<=60;
   div.innerHTML='<div class="head"><span class="t">'+esc(f.nome)+(f.previsto?' <span class="st">datas por confirmar</span>':'')+'</span>'+
+    '<span class="tag tipo-'+(f.tipo||'feira')+'">'+(f.tipo==='visita'?'Visita a cliente':'Feira/evento')+'</span>'+
     '<span class="tag '+f.dominio+'">'+FCAT[f.categoria]+'</span>'+
     '<span class="st">'+({PT:'Portugal',ES:'Espanha',EU:'Europa',MUNDO:'Fora da Europa'})[f.pais]+'</span></div>'+
     '<p class="meta"><b>'+fmtRange(f)+'</b> · '+esc(f.local)+' · '+FEST[est]+
@@ -2128,7 +2154,8 @@ function fReg(f){
 function fEdit(f){
   const w=document.createElement('div');w.className='form';
   w.innerHTML='<div class="fr"><div><label class="f">Nome</label><input type="text" id="e_n"></div>'+
-    '<div><label class="f">Local</label><input type="text" id="e_l"></div></div>'+
+    '<div><label class="f">Local</label><input type="text" id="e_l"></div>'+
+    '<div><label class="f">Tipo</label><select id="e_tp"><option value="feira">Feira/evento</option><option value="visita">Visita a cliente</option></select></div></div>'+
     '<div class="fr"><div><label class="f">Início</label><input type="date" id="e_i"></div>'+
     '<div><label class="f">Fim</label><input type="date" id="e_f"></div>'+
     '<div><label class="f">Custo estimado</label><input type="text" id="e_c" placeholder="stand 4.000 €"></div></div>'+
@@ -2146,7 +2173,7 @@ function fEdit(f){
     '<div class="btns"><button class="p" id="e_ok">Guardar</button><button id="e_no">Cancelar</button>'+
     '<button id="e_del">Apagar feira</button></div>';
   const q=s=>w.querySelector(s);
-  q('#e_n').value=f.nome;q('#e_l').value=f.local;q('#e_i').value=f.inicio;q('#e_f').value=f.fim;
+  q('#e_n').value=f.nome;q('#e_l').value=f.local;q('#e_tp').value=f.tipo||'feira';q('#e_i').value=f.inicio;q('#e_f').value=f.fim;
   q('#e_c').value=f.custo||'';q('#e_p').value=f.pais;q('#e_cat').value=f.categoria;
   q('#e_e').value=f.estado;q('#e_d').value=f.dominio;q('#e_pv').value=f.previsto?'1':'0';
   q('#e_ds').value=f.descricao||'';
@@ -2155,7 +2182,7 @@ function fEdit(f){
   q('#e_del').onclick=()=>{if(!confirm('Apagar '+f.nome+' e tudo o que registaste nela?'))return;
     S.feiras=S.feiras.filter(z=>z.id!==f.id);save();renderAll()};
   q('#e_ok').onclick=()=>{
-    f.nome=q('#e_n').value.trim()||f.nome;f.local=q('#e_l').value.trim();
+    f.nome=q('#e_n').value.trim()||f.nome;f.local=q('#e_l').value.trim();f.tipo=q('#e_tp').value;
     f.inicio=q('#e_i').value||f.inicio;f.fim=q('#e_f').value||f.inicio;
     if(f.fim<f.inicio)f.fim=f.inicio;
     f.custo=q('#e_c').value.trim();f.pais=q('#e_p').value;f.categoria=q('#e_cat').value;
@@ -2164,10 +2191,11 @@ function fEdit(f){
     abertoF[f.id]=null;save();renderAll()};
   return w;
 }
-function novaFeira(){
-  const n=prompt('Nome da feira ou evento:','');if(!n||!n.trim())return;
+function novaFeira(tipo){
+  tipo=tipo||'feira';
+  const n=prompt(tipo==='visita'?'Nome do cliente ou da visita:':'Nome da feira ou evento:','');if(!n||!n.trim())return;
   const i=prompt('Data de início, aaaa-mm-dd:',today());if(!i)return;
-  const f={id:'f'+Date.now(),nome:n.trim(),inicio:i.trim(),fim:i.trim(),local:'',pais:'PT',
+  const f={id:'f'+Date.now(),nome:n.trim(),inicio:i.trim(),fim:i.trim(),local:'',pais:'PT',tipo:tipo,
     categoria:'servicos',dominio:PLANO[viewDate.getDay()].dom,previsto:true,estado:'avaliar',
     descricao:'',topicoId:'',custo:'',ver:[],reunioes:[],registo:[],notas:''};
   S.feiras.push(f);abertoF[f.id]='edit';save();go('feiras');renderAll();
@@ -2264,6 +2292,31 @@ function gerarRep(){
   if(esp.length)r+='A AGUARDAR TERCEIROS\n'+esp.map(t=>'- '+t.titulo+', '+t.aguarda).join('\n')+'\n\n';
   r+='DECISÕES QUE PRECISO\n- (uma por linha)\n';
   document.getElementById('rep').value=r;S.rep=r;save();
+}
+function promptMes(){
+  const mes=curMes;
+  const porCliente={};
+  S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if((r.data||'').slice(0,7)===mes)(porCliente[c.nome]=porCliente[c.nome]||[]).push(r)}));
+  let rfqTxt='';
+  if(Object.keys(porCliente).length){
+    const tot=Object.values(porCliente).flat().reduce((s,r)=>s+(+r.valor||0),0);
+    rfqTxt='\n\nRFQs DO MÊS POR CLIENTE, DO CRM (total '+eur(tot)+')\n'+
+      Object.entries(porCliente).map(([cli,arr])=>'- '+cli+': '+arr.map(r=>r.descricao+' ('+eur(r.valor)+', '+r.data+')').join('; ')).join('\n');
+  }
+  return 'És o assistente do José Ribeiro, diretor comercial da Bontaz Portugal. Vou apresentar este ponto de situação de '+ymLabel(mes)+
+    ' ao Benoit e à Mary.\n\nTransforma os dados em baixo num relatório mensal claro e profissional, em português europeu, pronto a apresentar. '+
+    'Frases completas onde fizer sentido, foco no que importa para gestão: resultados comerciais, riscos, decisões pendentes. Não inventes números que não estejam nos dados.\n\n'+
+    document.getElementById('rep').value+rfqTxt;
+}
+function mostrarPromptMes(){
+  if(!document.getElementById('rep').value.trim())gerarRep();
+  const out=document.getElementById('promptMesOut');
+  out.innerHTML='';
+  const ta=document.createElement('textarea');ta.className='mono';ta.style.minHeight='160px';ta.style.marginTop='10px';
+  ta.value=promptMes();out.appendChild(ta);
+  const b=document.createElement('button');b.className='cta ghost';b.style.marginTop='8px';b.textContent='Copiar prompt';
+  b.onclick=()=>{ta.select();try{document.execCommand('copy');b.textContent='Copiado'}catch(e){b.textContent='Usa Ctrl+C'}};
+  out.appendChild(b);
 }
 function arquivoMd(){
   const tf=fechadas(),pf=S.topicos.filter(t=>t.estado==='fechado');
@@ -2378,6 +2431,7 @@ document.getElementById('aiBtn').onclick=pedirPrioridade;
 document.getElementById('ssiBtn').onclick=registarSsi;
 document.getElementById('rollBtn').onclick=rollover;
 document.getElementById('expBtn').onclick=gerarRep;
+document.getElementById('promptMesBtn').onclick=mostrarPromptMes;
 document.getElementById('mesSel').onchange=e=>{curMes=e.target.value;gerarRep();renderMes()};
 document.getElementById('arqSel').onchange=e=>{arqMes=e.target.value;renderArquivo()};
 document.getElementById('arqDl').onclick=()=>dl('arquivo-acoes-'+today()+'.md',arquivoMd());
@@ -2388,6 +2442,24 @@ document.getElementById('kpCopy').onclick=()=>{
   const pv=K(prevYm(kpMes));
   if(!Object.keys(pv).length){alert('O mês anterior está vazio.');return}
   KF.forEach(f=>{const el=document.getElementById('k_'+f);if(el)el.value=pv[f]!==undefined?pv[f]:''})};
+function crmKpisMes(mes){
+  const doMes=[];S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if((r.data||'').slice(0,7)===mes)doMes.push(r)}));
+  const enviadas=doMes.filter(r=>['enviada','ganha','perdida'].includes(estadoRfq(r.estado)));
+  const ganhas=doMes.filter(r=>estadoRfq(r.estado)==='ganha');
+  const perdidas=doMes.filter(r=>estadoRfq(r.estado)==='perdida');
+  const semResp=doMes.filter(r=>estadoRfq(r.estado)==='semresposta');
+  const abertas=[];S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if(['recebida','enviada'].includes(estadoRfq(r.estado)))abertas.push(r)}));
+  const soma=arr=>arr.reduce((s,r)=>s+(+r.valor||0),0);
+  return{rfq:doMes.length,cotN:enviadas.length,cotV:soma(enviadas),gan:ganhas.length,ganV:soma(ganhas),
+    per:perdidas.length,sr:semResp.length,bkN:abertas.length,bkV:soma(abertas)};
+}
+document.getElementById('kpFromCrm').onclick=()=>{
+  if(!S.crm.length){alert('Ainda não há clientes no CRM.');return}
+  const kk=crmKpisMes(kpMes);
+  Object.entries(kk).forEach(([f,v])=>{const el=document.getElementById('k_'+f);if(el)el.value=v});
+  alert('Preenchido a partir do CRM: '+kk.rfq+' RFQ recebidas em '+ymLabel(kpMes)+', '+kk.cotN+' enviadas, '+kk.gan+' ganhas, '+
+    kk.per+' perdidas, '+kk.sr+' sem resposta, '+kk.bkN+' em carteira agora. Confere e clica em Guardar mês.');
+};
 document.getElementById('objSave').onclick=()=>{
   S.obj={ano:parseFloat(document.getElementById('k_obj').value)||0,
     conv:parseFloat(document.getElementById('k_objC').value)||0,
@@ -2401,7 +2473,8 @@ document.getElementById('copyBtn').onclick=()=>{
   setTimeout(()=>document.getElementById('copyBtn').textContent='Copiar',1800)};
 document.getElementById('dlBtn').onclick=()=>dl('ponto-situacao-'+curMes+'.md',document.getElementById('rep').value);
 document.getElementById('syncNow').onclick=()=>sincronizar(false);
-document.getElementById('feiNova').onclick=novaFeira;
+document.getElementById('feiNova').onclick=()=>novaFeira('feira');
+document.getElementById('feiNovaVisita').onclick=()=>novaFeira('visita');
 document.getElementById('feiDl').onclick=()=>dl('feiras-'+today()+'.md',feirasMd());
 document.getElementById('fhNew').onclick=criarFH;
 document.getElementById('fhOpen').onclick=abrirFH;
