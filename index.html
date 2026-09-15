@@ -1353,7 +1353,7 @@ function taskLi(t){
   if(st==='nota')tx.appendChild(formNota(t));
   if(st==='hist'||st==='prog')tx.appendChild(logList(t));
   if(t.feito&&t.nota&&st!=='nota'){const d=document.createElement('div');d.className='nb';
-    const p=document.createElement('div');p.className='txt';p.textContent=t.nota;d.appendChild(p);tx.appendChild(d)}
+    const p=document.createElement('div');p.className='txt';p.innerHTML=linkify(esc(t.nota));d.appendChild(p);tx.appendChild(d)}
 
   const d=dueTxt(t);const dd=document.createElement('span');dd.className='due '+d.c;dd.textContent=d.s;
   const x=document.createElement('button');x.className='x';x.textContent='×';x.title='Apagar';
@@ -1366,7 +1366,7 @@ function logList(t){
   if(!t.log.length){const li=document.createElement('li');li.innerHTML='<span class="d">sem registos ainda</span>';ul.appendChild(li);return ul}
   [...t.log].reverse().forEach(e=>{
     const li=document.createElement('li');
-    li.innerHTML='<span class="d">'+esc(e.data)+'</span>'+esc(e.texto)+
+    li.innerHTML='<span class="d">'+esc(e.data)+'</span>'+linkify(esc(e.texto))+
       (e.de&&e.para?' <span class="mv">prazo '+esc(e.de)+' para '+esc(e.para)+'</span>':'');
     ul.appendChild(li);
   });
@@ -1392,6 +1392,7 @@ function formProgresso(t){
     logEntry(t,txt||'Prazo alterado.',nd!==de?de:'',nd!==de?nd:'');
     aberto[t.id]=null;save();renderAll();
   };
+  attachMention(f.querySelector('#pg_txt'));
   return f;
 }
 function formEditar(t){
@@ -1429,6 +1430,7 @@ function formNota(t){
   setTimeout(()=>f.querySelector('#nt_tx').focus(),0);
   f.querySelector('#nt_no').onclick=()=>{aberto[t.id]=null;renderAll()};
   f.querySelector('#nt_ok').onclick=()=>{t.nota=f.querySelector('#nt_tx').value.trim();aberto[t.id]=null;save();renderAll()};
+  attachMention(f.querySelector('#nt_tx'));
   return f;
 }
 function fillTasks(el,list,msg){
