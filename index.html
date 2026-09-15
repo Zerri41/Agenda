@@ -193,11 +193,10 @@
   .pagina{border:1px solid var(--line);margin-bottom:8px;background:var(--card)}
   .pagina .pt{padding:10px 13px;cursor:pointer;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
   .pagina .pc{padding:0 13px 13px}
-  .pagina .pc textarea{min-height:130px}
-  .pagina-imgs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-  .pagina-imgs .im{position:relative}
-  .pagina-imgs img{max-width:150px;max-height:150px;border:1px solid var(--line);border-radius:2px;object-fit:cover;display:block}
-  .pagina-imgs .im .x{position:absolute;top:-2px;right:-2px;background:var(--card);border:1px solid var(--line);border-radius:50%;line-height:1}
+  .pagina-corpo{min-height:130px;border:1px solid var(--line);border-radius:1px;padding:8px 9px;background:var(--card);font:inherit;white-space:pre-wrap}
+  .pagina-corpo:focus{outline:2px solid var(--navy);outline-offset:-1px;border-color:var(--navy)}
+  .pagina-corpo img{max-width:100%;display:block;margin:6px 0;border-radius:2px}
+  .pagina-corpo[data-placeholder]:empty:before{content:attr(data-placeholder);color:var(--steel)}
   a.mlink{color:var(--navy);font-weight:600;text-decoration:underline;cursor:pointer}
   .mentionbox{background:var(--card);border:1px solid var(--line);box-shadow:0 6px 18px rgba(15,23,42,.18);max-height:220px;overflow:auto;min-width:220px}
   .mentionbox .mi{padding:7px 11px;font-size:13px;cursor:pointer}
@@ -2607,10 +2606,15 @@ function attachMention(el){
     const m=antes.match(/\/([^\s\[\]]*)$/);
     if(!m)return;
     const termo=m[1].toLowerCase();
-    const lista=todosOsTitulos().filter(x=>x.titulo.toLowerCase().includes(termo)).slice(0,8);
-    if(!lista.length)return;
+    const todos=todosOsTitulos();
+    const lista=todos.filter(x=>x.titulo.toLowerCase().includes(termo)).slice(0,8);
+    if(!lista.length&&todos.length)return;
     box=document.createElement('div');box.className='mentionbox';
-    lista.forEach(x=>{
+    if(!todos.length){
+      const it=document.createElement('div');it.className='mi';it.style.cursor='default';it.style.color='var(--steel)';
+      it.textContent='Sem cadernos nem páginas ainda — cria um na aba Notas.';
+      box.appendChild(it);
+    } else lista.forEach(x=>{
       const it=document.createElement('div');it.className='mi';
       it.textContent=(x.tipo==='caderno'?'📔 ':'📄 ')+x.titulo+(x.caderno?' ('+x.caderno+')':'');
       it.onmousedown=ev=>{
@@ -2638,6 +2642,62 @@ function attachMention(el){
 let notaCaderno='';
 const PALETA_CADERNOS=['#4A6BB8','#3D8B75','#B08A2E','#A8341F','#7B4FA0','#1B6F62','#9A6A00','#2E6B8A'];
 function notaCorDefault(){return PALETA_CADERNOS[S.notas.cadernos.length%PALETA_CADERNOS.length]}
+function imagensDaPagina(p){
+  const out=[];const re=/data-imgid="([^"]+)"/g;let m;
+  while((m=re.exec(p.corpo||'')))out.push(m[1]);
+  return out;
+}
+function attachMentionCE(el){
+  let box=null;
+  const fechar=()=>{if(box){box.remove();box=null}};
+  el.addEventListener('input',()=>{
+    fechar();
+    const sel=window.getSelection();
+    if(!sel.rangeCount)return;
+    const range=sel.getRangeAt(0);
+    const node=range.startContainer;
+    if(node.nodeType!==3||!el.contains(node))return;
+    const texto=node.textContent.slice(0,range.startOffset);
+    const m=texto.match(/\/([^\s]*)$/);
+    if(!m)return;
+    const termo=m[1].toLowerCase();
+    const todos=todosOsTitulos();
+    const lista=todos.filter(x=>x.titulo.toLowerCase().includes(termo)).slice(0,8);
+    if(!lista.length&&todos.length)return;
+    box=document.createElement('div');box.className='mentionbox';
+    if(!todos.length){
+      const it=document.createElement('div');it.className='mi';it.style.cursor='default';it.style.color='var(--steel)';
+      it.textContent='Sem cadernos nem páginas ainda — cria um na aba Notas.';
+      box.appendChild(it);
+    } else lista.forEach(x=>{
+      const it=document.createElement('div');it.className='mi';
+      it.textContent=(x.tipo==='caderno'?'📔 ':'📄 ')+x.titulo+(x.caderno?' ('+x.caderno+')':'');
+      it.onmousedown=ev=>{
+        ev.preventDefault();
+        const before=node.textContent.slice(0,range.startOffset-m[0].length);
+        const after=node.textContent.slice(range.startOffset);
+        node.textContent=before;
+        const a=document.createElement('a');a.href='#';a.className='mlink';
+        a.dataset.tipo=x.tipo;a.dataset.id=x.id;a.textContent=x.titulo;
+        const afterNode=document.createTextNode(' '+after);
+        node.parentNode.insertBefore(afterNode,node.nextSibling);
+        node.parentNode.insertBefore(a,afterNode);
+        const r=document.createRange();r.setStart(afterNode,1);r.collapse(true);
+        sel.removeAllRanges();sel.addRange(r);
+        el.dispatchEvent(new Event('input',{bubbles:true}));
+        fechar();
+      };
+      box.appendChild(it);
+    });
+    const parent=el.parentNode;
+    if(getComputedStyle(parent).position==='static')parent.style.position='relative';
+    const rects=range.getClientRects();const elRect=el.getBoundingClientRect();
+    const top=rects.length?(rects[0].top-elRect.top+el.offsetTop+18):(el.offsetTop+el.offsetHeight);
+    box.style.position='absolute';box.style.left='0';box.style.top=top+'px';box.style.zIndex='50';
+    parent.appendChild(box);
+  });
+  el.addEventListener('blur',()=>setTimeout(fechar,150));
+}
 function novoCaderno(){
   const n=prompt('Nome do caderno:','');if(!n||!n.trim())return;
   const c={id:'nb'+Date.now(),nome:n.trim(),cor:notaCorDefault()};
@@ -2663,7 +2723,7 @@ function editarCadernoUI(){
   host.querySelector('#ncbDel').onclick=()=>{
     const pags=S.notas.paginas.filter(p=>p.cadernoId===c.id);
     if(!confirm('Eliminar o caderno "'+c.nome+'" e as '+pags.length+' páginas dentro dele?'))return;
-    pags.forEach(p=>(p.imagens||[]).forEach(id=>imgDel(id)));
+    pags.forEach(p=>imagensDaPagina(p).forEach(id=>imgDel(id)));
     S.notas.paginas=S.notas.paginas.filter(p=>p.cadernoId!==c.id);
     S.notas.cadernos=S.notas.cadernos.filter(x=>x.id!==c.id);
     notaCaderno='';host.innerHTML='';save();renderNotas();
@@ -2681,7 +2741,7 @@ function paginaEl(p){
   const del=document.createElement('button');del.className='x';del.textContent='×';del.title='Eliminar página';
   del.onclick=ev=>{ev.stopPropagation();
     if(!confirm('Eliminar a página "'+p.titulo+'"?'))return;
-    (p.imagens||[]).forEach(id=>imgDel(id));
+    imagensDaPagina(p).forEach(id=>imgDel(id));
     S.notas.paginas=S.notas.paginas.filter(x=>x.id!==p.id);save();renderNotas();
   };
   h.appendChild(del);
@@ -2689,44 +2749,41 @@ function paginaEl(p){
   d.appendChild(h);
   if(p.aberta){
     const body=document.createElement('div');body.className='pc';
-    const ta=document.createElement('textarea');ta.value=p.corpo||'';ta.placeholder='Escreve aqui. Usa / para ligar a outro título, ou cola uma imagem com Ctrl+V.';
-    ta.oninput=()=>{p.corpo=ta.value;save()};
-    body.appendChild(ta);
-    attachMention(ta);
-    ta.addEventListener('paste',async e=>{
+    const ce=document.createElement('div');ce.className='pagina-corpo';ce.contentEditable='true';
+    ce.setAttribute('data-placeholder','Escreve aqui. Usa / para ligar a outro título, ou cola uma imagem com Ctrl+V.');
+    ce.innerHTML=p.corpo||'';
+    body.appendChild(ce);
+    ce.querySelectorAll('img[data-imgid]').forEach(img=>{imgGet(img.dataset.imgid).then(url=>{if(url)img.src=url})});
+    const gravar=()=>{
+      const tmp=document.createElement('div');tmp.innerHTML=ce.innerHTML;
+      tmp.querySelectorAll('img[data-imgid]').forEach(img=>img.removeAttribute('src'));
+      p.corpo=tmp.innerHTML;save();
+    };
+    ce.addEventListener('input',gravar);
+    attachMentionCE(ce);
+    async function inserirImagem(file){
+      const sel=window.getSelection();
+      let range=null;
+      if(sel&&sel.rangeCount&&ce.contains(sel.anchorNode))range=sel.getRangeAt(0).cloneRange();
+      const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file)});
+      const id='img'+Date.now()+Math.random().toString(36).slice(2,7);
+      await imgPut(id,dataUrl);
+      const img=document.createElement('img');img.dataset.imgid=id;img.src=dataUrl;
+      if(!range){range=document.createRange();range.selectNodeContents(ce);range.collapse(false)}
+      range.deleteContents();range.insertNode(img);
+      range.setStartAfter(img);range.setEndAfter(img);
+      const sel2=window.getSelection();sel2.removeAllRanges();sel2.addRange(range);
+      ce.focus();gravar();
+    }
+    ce.addEventListener('paste',e=>{
       const items=[...(e.clipboardData&&e.clipboardData.items||[])];
       const imgItem=items.find(it=>it.type&&it.type.startsWith('image/'));
       if(!imgItem)return;
       e.preventDefault();
-      const file=imgItem.getAsFile();
-      const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file)});
-      const id='img'+Date.now()+Math.random().toString(36).slice(2,7);
-      await imgPut(id,dataUrl);
-      p.imagens=p.imagens||[];p.imagens.push(id);
-      save();renderNotas();
+      inserirImagem(imgItem.getAsFile());
     });
-    const imgs=document.createElement('div');imgs.className='pagina-imgs';
-    body.appendChild(imgs);
-    (p.imagens||[]).forEach(id=>{
-      imgGet(id).then(url=>{
-        if(!url)return;
-        const im=document.createElement('div');im.className='im';
-        const img=document.createElement('img');img.src=url;im.appendChild(img);
-        const rm=document.createElement('button');rm.className='x';rm.textContent='×';
-        rm.onclick=()=>{p.imagens=p.imagens.filter(x=>x!==id);imgDel(id);save();renderNotas()};
-        im.appendChild(rm);imgs.appendChild(im);
-      });
-    });
-    const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.multiple=true;
-    fi.onchange=async()=>{
-      for(const f of[...fi.files]){
-        const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});
-        const id='img'+Date.now()+Math.random().toString(36).slice(2,7);
-        await imgPut(id,dataUrl);
-        p.imagens=p.imagens||[];p.imagens.push(id);
-      }
-      save();renderNotas();
-    };
+    const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.multiple=true;fi.style.marginTop='8px';
+    fi.onchange=async()=>{for(const f of[...fi.files])await inserirImagem(f);fi.value=''};
     body.appendChild(fi);
     d.appendChild(body);
   }
