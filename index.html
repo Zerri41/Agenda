@@ -186,6 +186,22 @@
   .semlist .ln:first-child{border-top:0}
   .semlist .ln b{font-weight:600}
   .semlist .ln .tp{color:var(--steel);font-weight:600;margin-right:4px}
+  .notas-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+  .notas-tab{padding:8px 15px;border-radius:6px 6px 0 0;cursor:pointer;font-weight:600;font-size:13px;border:0;opacity:.55;color:#fff}
+  .notas-tab.ativo{opacity:1}
+  .notas-toolbar{margin:0 0 12px}
+  .pagina{border:1px solid var(--line);margin-bottom:8px;background:var(--card)}
+  .pagina .pt{padding:10px 13px;cursor:pointer;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .pagina .pc{padding:0 13px 13px}
+  .pagina .pc textarea{min-height:130px}
+  .pagina-imgs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .pagina-imgs .im{position:relative}
+  .pagina-imgs img{max-width:150px;max-height:150px;border:1px solid var(--line);border-radius:2px;object-fit:cover;display:block}
+  .pagina-imgs .im .x{position:absolute;top:-2px;right:-2px;background:var(--card);border:1px solid var(--line);border-radius:50%;line-height:1}
+  a.mlink{color:var(--navy);font-weight:600;text-decoration:underline;cursor:pointer}
+  .mentionbox{background:var(--card);border:1px solid var(--line);box-shadow:0 6px 18px rgba(15,23,42,.18);max-height:220px;overflow:auto;min-width:220px}
+  .mentionbox .mi{padding:7px 11px;font-size:13px;cursor:pointer}
+  .mentionbox .mi:hover{background:#F4F7FB}
   .anexos .an{font-size:13px;padding:3px 0;color:#243049}
   .anexos .an span{color:var(--steel);font-size:11.5px}
   .anexos .an.done{color:var(--steel);text-decoration:line-through}
@@ -367,6 +383,7 @@
       <button role="tab" id="t-dados" aria-selected="false">Dados</button>
       <button role="tab" id="t-mes" aria-selected="false">Mês</button>
       <button role="tab" id="t-semana" aria-selected="false">Semana</button>
+      <button role="tab" id="t-notas" aria-selected="false">Notas</button>
     </nav>
   </header>
 
@@ -810,6 +827,22 @@
         <div id="semPromptOut"></div>
       </div>
     </section>
+
+    <!-- NOTAS -->
+    <section id="v-notas" class="hidden">
+      <div class="panel">
+        <h2>Notas</h2>
+        <p class="hint">Cadernos e páginas, à tua maneira — nada vem pré-feito. Escreve <code>/</code> em qualquer nota, ata, registo de feira, relatório de mês ou de semana para ligar a um título daqui.</p>
+        <div class="notas-tabs" id="notasTabs"></div>
+        <div class="notas-toolbar btnrow">
+          <button class="cta ghost" id="notaNovoCaderno">+ Caderno novo</button>
+          <button class="cta ghost" id="notaNovaPagina">+ Página nova</button>
+          <button class="cta ghost" id="notaEditCaderno">Editar caderno</button>
+        </div>
+        <div id="notaCadernoEditor"></div>
+        <div id="notasPaginas"></div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -842,7 +875,7 @@ const SEED_TOP=[
 const SEED_TAR=[
  ['','servicos','Exemplo de tarefa, apaga e cria as tuas','Exemplo']];
 
-let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],semanal:{},rep:'',seeded:false}, M={atas:[]};
+let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],semanal:{},notas:{cadernos:[],paginas:[]},rep:'',seeded:false}, M={atas:[]};
 const BACKUP=null;
 let viewDate=new Date(), calY=viewDate.getFullYear(), calM=viewDate.getMonth();
 let curMes='', arqMes='todos', pnMes='', kpMes='', momEdit=null, tab='dia', aberto={}, abertoF={};
@@ -890,7 +923,7 @@ function pack(){return{app:'agenda-bontaz',versao:9,gerado:new Date().toISOStrin
 function aplicarPack(p){
   if(!p||!p.core)throw new Error('ficheiro sem dados');
   S=p.core;M=p.moms||{atas:[]};
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};M.atas=M.atas||[];
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});M.atas=M.atas||[];
   if(!S.feiras.length)S.feiras=seedFeiras();
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[];f.tipo=f.tipo||'feira'});
   S.tarefas.forEach(t=>{if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
@@ -1195,7 +1228,7 @@ async function load(){
   else marcar(true);
   let v=await jget(K_CORE);if(!v)v=await jget(K_OLD2);
   if(v)S=Object.assign(S,v);
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});
   const virgem=!S.seeded&&!S.topicos.length&&!S.tarefas.length;
   if(virgem){try{aplicarPack(BACKUP)}catch(e){
     S.topicos=SEED_TOP.map((s,i)=>({id:'t'+i,titulo:s[0],dominio:s[1],proxima:s[2],aguarda:s[3],estado:s[4],revisao:'',fechadoEm:'',nota:''}));
@@ -1523,14 +1556,14 @@ function rowEl(t,compact){
   div.innerHTML='<div class="head"><span class="t">'+esc(t.titulo)+'</span>'+
     (compact?'':'<span class="tag '+t.dominio+'">'+DOM[t.dominio]+'</span>')+
     '<span class="st">'+({ativo:'ativo',aguarda:'à espera',parqueado:'parqueado',fechado:'fechado'})[t.estado]+'</span></div>'+
-    '<p class="next">'+(t.proxima?esc(t.proxima):'<em>Sem próxima ação definida</em>')+'</p>';
+    '<p class="next">'+(t.proxima?linkify(esc(t.proxima)):'<em>Sem próxima ação definida</em>')+'</p>';
   const bits=[];
   if(t.aguarda)bits.push('à espera de '+esc(t.aguarda));
   if(t.revisao)bits.push('revisão a '+esc(t.revisao));
   if(t.fechadoEm)bits.push('fechado a '+esc(t.fechadoEm));
   if(bits.length){const m=document.createElement('p');m.className='meta';m.innerHTML=bits.join(', ');div.appendChild(m)}
   if(t.nota){const n=document.createElement('div');n.className='nb';
-    const p=document.createElement('div');p.className='txt';p.textContent=t.nota;n.appendChild(p);div.appendChild(n)}
+    const p=document.createElement('div');p.className='txt';p.innerHTML=linkify(esc(t.nota));n.appendChild(p);div.appendChild(n)}
 
   const tar=S.tarefas.filter(x=>x.topicoId===t.id), ats=M.atas.filter(x=>x.topicoId===t.id);
   if(tar.length||ats.length){
@@ -1575,7 +1608,7 @@ function momEl(a){
   d.innerHTML='<div class="mh"><b>'+esc(a.titulo)+'</b>'+
     (a.topicoId?'<span class="tag '+a.dominio+'">'+esc(topNome(a.topicoId))+'</span>':'<span class="tag '+a.dominio+'">'+DOM[a.dominio]+'</span>')+
     '<span class="st">'+esc(a.data)+'</span></div>'+
-    (a.participantes?'<p class="who">'+esc(a.participantes)+'</p>':'')+'<pre>'+esc(a.corpo)+'</pre>';
+    (a.participantes?'<p class="who">'+esc(a.participantes)+'</p>':'')+'<pre>'+linkify(esc(a.corpo))+'</pre>';
   const acts=document.createElement('div');acts.className='acts';
   const b1=document.createElement('button');b1.textContent='Editar';
   b1.onclick=()=>openMom(a,tab==='dia'?'momHostDia':'momHostAtas');
@@ -1611,6 +1644,7 @@ function openMom(a,host,topId){
   e.querySelector('#mP').value=a?a.participantes:'';
   e.querySelector('#mB').value=a?a.corpo:TPL;
   fillTopSelect(e.querySelector('#mTop'),a?a.topicoId:(topId||''));
+  attachMention(e.querySelector('#mB'));
   e.querySelector('#mT').focus();e.scrollIntoView({block:'center'});
 }
 function saveMom(){
@@ -2202,7 +2236,7 @@ function fReg(f){
   if(!f.registo.length){const li=document.createElement('li');li.innerHTML='<span class="d">sem registos</span>';ul.appendChild(li)}
   [...f.registo].reverse().forEach(e=>{
     const li=document.createElement('li');
-    li.innerHTML='<span class="d">'+esc(e.data)+'</span>'+esc(e.texto);
+    li.innerHTML='<span class="d">'+esc(e.data)+'</span>'+linkify(esc(e.texto));
     const x=document.createElement('button');x.className='x';x.textContent='×';
     x.onclick=()=>{f.registo=f.registo.filter(z=>z!==e);save();renderFeiras()};
     li.appendChild(x);ul.appendChild(li);
@@ -2210,6 +2244,7 @@ function fReg(f){
   w.appendChild(ul);
   const fr=document.createElement('div');fr.className='fr';fr.style.marginTop='8px';
   fr.innerHTML='<div><textarea id="gn_'+f.id+'" placeholder="O que foi discutido, o que observaste, o que mudou de opinião."></textarea></div>';
+  attachMention(fr.querySelector('#gn_'+f.id));
   const b=document.createElement('div');b.className='btns';
   const ok=document.createElement('button');ok.className='p';ok.textContent='Registar';
   ok.onclick=()=>{const el=document.getElementById('gn_'+f.id),v=el.value.trim();if(!v)return;
@@ -2511,6 +2546,214 @@ function copiarTextoSemana(){
   try{document.execCommand('copy');alert('Texto do report copiado.')}catch(e){alert('Não deu para copiar automaticamente.')}
   ta.remove();
 }
+/* ---------- imagens locais (IndexedDB, nao sincroniza) ---------- */
+let IDB=null;
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    if(IDB){res(IDB);return}
+    if(!window.indexedDB){rej(new Error('sem IndexedDB'));return}
+    const rq=indexedDB.open('agenda-imgs',1);
+    rq.onupgradeneeded=()=>{try{rq.result.createObjectStore('imgs')}catch(e){}};
+    rq.onsuccess=()=>{IDB=rq.result;res(IDB)};
+    rq.onerror=()=>rej(rq.error);
+  });
+}
+async function imgPut(id,dataUrl){try{const db=await idbOpen();return new Promise((res,rej)=>{
+  const tx=db.transaction('imgs','readwrite');tx.objectStore('imgs').put(dataUrl,id);
+  tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}catch(e){alert('Não deu para guardar a imagem neste navegador.')}}
+async function imgGet(id){try{const db=await idbOpen();return new Promise((res,rej)=>{
+  const tx=db.transaction('imgs','readonly');const rq=tx.objectStore('imgs').get(id);
+  rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error)})}catch(e){return null}}
+async function imgDel(id){try{const db=await idbOpen();return new Promise((res,rej)=>{
+  const tx=db.transaction('imgs','readwrite');tx.objectStore('imgs').delete(id);
+  tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}catch(e){}}
+
+/* ---------- ligacoes /titulo e cadernos tipo OneNote ---------- */
+function todosOsTitulos(){
+  const out=[];
+  S.notas.cadernos.forEach(c=>out.push({tipo:'caderno',id:c.id,titulo:c.nome}));
+  S.notas.paginas.forEach(p=>{
+    const c=S.notas.cadernos.find(x=>x.id===p.cadernoId);
+    out.push({tipo:'pagina',id:p.id,titulo:p.titulo,caderno:c?c.nome:''});
+  });
+  return out;
+}
+function linkify(safeHtml){
+  if(!safeHtml)return safeHtml;
+  return safeHtml.replace(/\[\[(caderno|pagina):([\w-]+)\|([^\]]*)\]\]/g,
+    (m,tipo,id,tit)=>'<a href="#" class="mlink" data-tipo="'+tipo+'" data-id="'+id+'">'+tit+'</a>');
+}
+function irParaLigacao(tipo,id){
+  go('notas');
+  if(tipo==='caderno'){notaCaderno=id;renderNotas();return}
+  const p=S.notas.paginas.find(x=>x.id===id);
+  if(!p){alert('Essa página já não existe.');return}
+  notaCaderno=p.cadernoId;p.aberta=true;save();renderNotas();
+  setTimeout(()=>{const els=[...document.querySelectorAll('#notasPaginas .pt span')];
+    const el=els.find(s=>s.textContent===p.titulo);if(el)el.scrollIntoView({block:'center'})},30);
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('.mlink');if(!a)return;
+  e.preventDefault();e.stopPropagation();
+  irParaLigacao(a.dataset.tipo,a.dataset.id);
+});
+function attachMention(el){
+  if(!el)return;
+  let box=null;
+  const fechar=()=>{if(box){box.remove();box=null}};
+  el.addEventListener('input',()=>{
+    fechar();
+    const v=el.value,pos=el.selectionStart,antes=v.slice(0,pos);
+    const m=antes.match(/\/([^\s\[\]]*)$/);
+    if(!m)return;
+    const termo=m[1].toLowerCase();
+    const lista=todosOsTitulos().filter(x=>x.titulo.toLowerCase().includes(termo)).slice(0,8);
+    if(!lista.length)return;
+    box=document.createElement('div');box.className='mentionbox';
+    lista.forEach(x=>{
+      const it=document.createElement('div');it.className='mi';
+      it.textContent=(x.tipo==='caderno'?'📔 ':'📄 ')+x.titulo+(x.caderno?' ('+x.caderno+')':'');
+      it.onmousedown=ev=>{
+        ev.preventDefault();
+        const antesSemBarra=antes.slice(0,antes.length-m[0].length);
+        const depois=v.slice(pos);
+        const tag='[['+x.tipo+':'+x.id+'|'+x.titulo+']]';
+        el.value=antesSemBarra+tag+' '+depois;
+        const np=(antesSemBarra+tag+' ').length;
+        el.focus();el.selectionStart=el.selectionEnd=np;
+        el.dispatchEvent(new Event('input',{bubbles:true}));
+        fechar();
+      };
+      box.appendChild(it);
+    });
+    const parent=el.parentNode;
+    if(getComputedStyle(parent).position==='static')parent.style.position='relative';
+    box.style.position='absolute';box.style.left='0';box.style.top=(el.offsetTop+el.offsetHeight)+'px';box.style.zIndex='50';
+    parent.appendChild(box);
+  });
+  el.addEventListener('blur',()=>setTimeout(fechar,150));
+}
+
+/* ---------- cadernos e paginas (aba Notas) ---------- */
+let notaCaderno='';
+const PALETA_CADERNOS=['#4A6BB8','#3D8B75','#B08A2E','#A8341F','#7B4FA0','#1B6F62','#9A6A00','#2E6B8A'];
+function notaCorDefault(){return PALETA_CADERNOS[S.notas.cadernos.length%PALETA_CADERNOS.length]}
+function novoCaderno(){
+  const n=prompt('Nome do caderno:','');if(!n||!n.trim())return;
+  const c={id:'nb'+Date.now(),nome:n.trim(),cor:notaCorDefault()};
+  S.notas.cadernos.push(c);notaCaderno=c.id;save();renderNotas();
+}
+function novaPagina(){
+  if(!notaCaderno){alert('Cria primeiro um caderno.');return}
+  const t=prompt('Título da página:','');if(!t||!t.trim())return;
+  S.notas.paginas.push({id:'pg'+Date.now(),cadernoId:notaCaderno,titulo:t.trim(),corpo:'',imagens:[],aberta:true});
+  save();renderNotas();
+}
+function editarCadernoUI(){
+  const c=S.notas.cadernos.find(x=>x.id===notaCaderno);
+  const host=document.getElementById('notaCadernoEditor');
+  if(!c){host.innerHTML='';return}
+  host.className='form';
+  host.innerHTML='<div class="fr"><div><label class="f">Nome do caderno</label><input type="text" id="ncbNome"></div>'+
+    '<div style="flex:none;width:90px"><label class="f">Cor</label><input type="color" id="ncbCor" style="height:38px;padding:2px"></div></div>'+
+    '<div class="btns"><button class="p" id="ncbOk">Guardar</button><button id="ncbNo">Cancelar</button><button id="ncbDel">Eliminar caderno</button></div>';
+  host.querySelector('#ncbNome').value=c.nome;
+  host.querySelector('#ncbCor').value=c.cor;
+  host.querySelector('#ncbNo').onclick=()=>{host.innerHTML=''};
+  host.querySelector('#ncbDel').onclick=()=>{
+    const pags=S.notas.paginas.filter(p=>p.cadernoId===c.id);
+    if(!confirm('Eliminar o caderno "'+c.nome+'" e as '+pags.length+' páginas dentro dele?'))return;
+    pags.forEach(p=>(p.imagens||[]).forEach(id=>imgDel(id)));
+    S.notas.paginas=S.notas.paginas.filter(p=>p.cadernoId!==c.id);
+    S.notas.cadernos=S.notas.cadernos.filter(x=>x.id!==c.id);
+    notaCaderno='';host.innerHTML='';save();renderNotas();
+  };
+  host.querySelector('#ncbOk').onclick=()=>{
+    c.nome=host.querySelector('#ncbNome').value.trim()||c.nome;
+    c.cor=host.querySelector('#ncbCor').value;
+    host.innerHTML='';save();renderNotas();
+  };
+}
+function paginaEl(p){
+  const d=document.createElement('div');d.className='pagina'+(p.aberta?' aberta':'');
+  const h=document.createElement('div');h.className='pt';
+  h.innerHTML='<span>'+(p.aberta?'▾ ':'▸ ')+esc(p.titulo)+'</span>';
+  const del=document.createElement('button');del.className='x';del.textContent='×';del.title='Eliminar página';
+  del.onclick=ev=>{ev.stopPropagation();
+    if(!confirm('Eliminar a página "'+p.titulo+'"?'))return;
+    (p.imagens||[]).forEach(id=>imgDel(id));
+    S.notas.paginas=S.notas.paginas.filter(x=>x.id!==p.id);save();renderNotas();
+  };
+  h.appendChild(del);
+  h.onclick=()=>{p.aberta=!p.aberta;save();renderNotas()};
+  d.appendChild(h);
+  if(p.aberta){
+    const body=document.createElement('div');body.className='pc';
+    const ta=document.createElement('textarea');ta.value=p.corpo||'';ta.placeholder='Escreve aqui. Usa / para ligar a outro título, ou cola uma imagem com Ctrl+V.';
+    ta.oninput=()=>{p.corpo=ta.value;save()};
+    body.appendChild(ta);
+    attachMention(ta);
+    ta.addEventListener('paste',async e=>{
+      const items=[...(e.clipboardData&&e.clipboardData.items||[])];
+      const imgItem=items.find(it=>it.type&&it.type.startsWith('image/'));
+      if(!imgItem)return;
+      e.preventDefault();
+      const file=imgItem.getAsFile();
+      const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file)});
+      const id='img'+Date.now()+Math.random().toString(36).slice(2,7);
+      await imgPut(id,dataUrl);
+      p.imagens=p.imagens||[];p.imagens.push(id);
+      save();renderNotas();
+    });
+    const imgs=document.createElement('div');imgs.className='pagina-imgs';
+    body.appendChild(imgs);
+    (p.imagens||[]).forEach(id=>{
+      imgGet(id).then(url=>{
+        if(!url)return;
+        const im=document.createElement('div');im.className='im';
+        const img=document.createElement('img');img.src=url;im.appendChild(img);
+        const rm=document.createElement('button');rm.className='x';rm.textContent='×';
+        rm.onclick=()=>{p.imagens=p.imagens.filter(x=>x!==id);imgDel(id);save();renderNotas()};
+        im.appendChild(rm);imgs.appendChild(im);
+      });
+    });
+    const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.multiple=true;
+    fi.onchange=async()=>{
+      for(const f of[...fi.files]){
+        const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});
+        const id='img'+Date.now()+Math.random().toString(36).slice(2,7);
+        await imgPut(id,dataUrl);
+        p.imagens=p.imagens||[];p.imagens.push(id);
+      }
+      save();renderNotas();
+    };
+    body.appendChild(fi);
+    d.appendChild(body);
+  }
+  return d;
+}
+function renderNotas(){
+  const tabs=document.getElementById('notasTabs');
+  document.getElementById('notaCadernoEditor').innerHTML='';
+  if(!S.notas.cadernos.length){
+    tabs.innerHTML='';
+    document.getElementById('notasPaginas').innerHTML='<p class="empty">Sem cadernos ainda. Cria um em "+ Caderno novo".</p>';
+    return;
+  }
+  if(!notaCaderno||!S.notas.cadernos.some(c=>c.id===notaCaderno))notaCaderno=S.notas.cadernos[0].id;
+  tabs.innerHTML='';
+  S.notas.cadernos.forEach(c=>{
+    const b=document.createElement('button');b.className='notas-tab'+(c.id===notaCaderno?' ativo':'');
+    b.style.background=c.cor;b.textContent=c.nome;
+    b.onclick=()=>{notaCaderno=c.id;renderNotas()};
+    tabs.appendChild(b);
+  });
+  const box=document.getElementById('notasPaginas');box.innerHTML='';
+  const pags=S.notas.paginas.filter(p=>p.cadernoId===notaCaderno);
+  if(!pags.length)box.innerHTML='<p class="empty">Sem páginas neste caderno. Cria uma em "+ Página nova".</p>';
+  pags.forEach(p=>box.appendChild(paginaEl(p)));
+}
+
 function arquivoMd(){
   const tf=fechadas(),pf=S.topicos.filter(t=>t.estado==='fechado');
   const meses=[...new Set([...tf.map(t=>(t.feitoEm||'').slice(0,7)),...pf.map(t=>(t.fechadoEm||'').slice(0,7))])].filter(Boolean).sort().reverse();
@@ -2581,8 +2824,8 @@ async function pedirPrioridade(){
 
 /* ---------- render geral e eventos ---------- */
 function renderAll(){renderBell();renderCal();renderSsi();renderDay();renderTasks();
-  renderArquivo();renderTopics();renderCRM();renderMoms();renderFeiras();renderMes();renderPainel();renderDados();renderSemana()}
-const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes',semana:'v-semana'};
+  renderArquivo();renderTopics();renderCRM();renderMoms();renderFeiras();renderMes();renderPainel();renderDados();renderSemana();renderNotas()}
+const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes',semana:'v-semana',notas:'v-notas'};
 function go(name){tab=name;
   document.getElementById('v-busca').classList.add('hidden');
   Object.entries(VIEWS).forEach(([k,v])=>{
@@ -2627,8 +2870,12 @@ document.getElementById('expBtn').onclick=gerarRep;
 document.getElementById('promptMesBtn').onclick=mostrarPromptMes;
 document.getElementById('semSel').onchange=e=>{semMk=e.target.value;renderSemana()};
 document.getElementById('semNota').addEventListener('input',e=>{semReg(semMk).nota=e.target.value;save()});
+attachMention(document.getElementById('semNota'));
 document.getElementById('semCopy').onclick=copiarTextoSemana;
 document.getElementById('semPromptBtn').onclick=mostrarPromptSemana;
+document.getElementById('notaNovoCaderno').onclick=novoCaderno;
+document.getElementById('notaNovaPagina').onclick=novaPagina;
+document.getElementById('notaEditCaderno').onclick=editarCadernoUI;
 document.getElementById('mesSel').onchange=e=>{curMes=e.target.value;gerarRep();renderMes()};
 document.getElementById('arqSel').onchange=e=>{arqMes=e.target.value;renderArquivo()};
 document.getElementById('arqDl').onclick=()=>dl('arquivo-acoes-'+today()+'.md',arquivoMd());
@@ -2664,6 +2911,7 @@ document.getElementById('objSave').onclick=()=>{
     prazo:parseFloat(document.getElementById('k_objP').value)||0};
   save();renderPainel();alert('Objetivos guardados.')};
 document.getElementById('rep').addEventListener('input',e=>{S.rep=e.target.value;save()});
+attachMention(document.getElementById('rep'));
 document.getElementById('copyBtn').onclick=()=>{
   const t=document.getElementById('rep');t.select();
   try{document.execCommand('copy');document.getElementById('copyBtn').textContent='Copiado'}
