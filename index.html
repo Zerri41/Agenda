@@ -24,8 +24,8 @@
   header.top{display:grid;grid-template-columns:1fr auto;gap:12px 18px;align-items:center;margin-bottom:10px}
   h1{font-size:19px;font-weight:650;letter-spacing:-.02em;margin:0}
   h1 span{color:var(--steel);font-weight:400}
-  .tools{display:flex;gap:8px;align-items:center;justify-self:end}
-  .tools input{width:230px}
+  .tools{display:flex;gap:8px;align-items:center;justify-self:end;flex-wrap:wrap;row-gap:6px}
+  .tools input{width:180px}
   nav{grid-column:1/-1;display:flex;gap:2px;background:#DDE2EB;padding:3px;border-radius:2px;overflow-x:auto}
   nav button{border:0;background:transparent;padding:7px 12px;border-radius:1px;font:inherit;font-size:13.5px;color:var(--navy);cursor:pointer;white-space:nowrap}
   nav button[aria-selected="true"]{background:var(--card);font-weight:600;box-shadow:0 1px 0 var(--line)}
@@ -368,38 +368,42 @@
 
 <div class="wrap">
   <header class="top">
-    <h1>Agenda e tarefas <span>Bontaz Portugal</span></h1>
+    <h1><span data-en="Agenda and tasks">Agenda e tarefas</span> <span data-en="Bontaz Portugal">Bontaz Portugal</span></h1>
     <div class="tools">
-      <input type="search" id="q" placeholder="Procurar em tudo" autocomplete="off">
+      <input type="search" id="q" placeholder="Procurar em tudo" data-en-ph="Search everything" autocomplete="off">
       <div class="bellwrap">
-        <button id="bell">Avisos <b id="bellN">0</b></button>
+        <button id="bell"><span data-en="Alerts">Avisos</span> <b id="bellN">0</b></button>
         <div id="bellPanel" class="hidden"></div>
+      </div>
+      <div class="langsw" id="langSw" style="display:flex;border:1px solid var(--line);border-radius:1px;overflow:hidden">
+        <button id="langPt" style="border:0;background:var(--navy);color:#fff;font:inherit;font-size:12.5px;padding:6px 10px;cursor:pointer">PT</button>
+        <button id="langEn" style="border:0;background:var(--card);color:var(--navy);font:inherit;font-size:12.5px;padding:6px 10px;cursor:pointer">EN</button>
       </div>
     </div>
     <nav role="tablist">
-      <button role="tab" id="t-painel" aria-selected="false">Painel</button>
-      <button role="tab" id="t-dia" aria-selected="true">Agenda</button>
-      <button role="tab" id="t-tarefas" aria-selected="false">Tarefas</button>
-      <button role="tab" id="t-topicos" aria-selected="false">Tópicos</button>
-      <button role="tab" id="t-crm" aria-selected="false">CRM</button>
-      <button role="tab" id="t-atas" aria-selected="false">Atas</button>
-      <button role="tab" id="t-feiras" aria-selected="false">Feiras</button>
-      <button role="tab" id="t-arquivo" aria-selected="false">Arquivo</button>
-      <button role="tab" id="t-dados" aria-selected="false">Dados</button>
-      <button role="tab" id="t-mes" aria-selected="false">Mês</button>
-      <button role="tab" id="t-semana" aria-selected="false">Semana</button>
-      <button role="tab" id="t-notas" aria-selected="false">Notas</button>
+      <button role="tab" id="t-painel" aria-selected="false" data-en="Dashboard">Painel</button>
+      <button role="tab" id="t-dia" aria-selected="true" data-en="Agenda">Agenda</button>
+      <button role="tab" id="t-tarefas" aria-selected="false" data-en="Tasks">Tarefas</button>
+      <button role="tab" id="t-topicos" aria-selected="false" data-en="Topics">Tópicos</button>
+      <button role="tab" id="t-crm" aria-selected="false" data-en="CRM">CRM</button>
+      <button role="tab" id="t-atas" aria-selected="false" data-en="Minutes">Atas</button>
+      <button role="tab" id="t-feiras" aria-selected="false" data-en="Fairs/visits">Feiras</button>
+      <button role="tab" id="t-arquivo" aria-selected="false" data-en="Archive">Arquivo</button>
+      <button role="tab" id="t-dados" aria-selected="false" data-en="Data">Dados</button>
+      <button role="tab" id="t-mes" aria-selected="false" data-en="Month">Mês</button>
+      <button role="tab" id="t-semana" aria-selected="false" data-en="Week">Semana</button>
+      <button role="tab" id="t-notas" aria-selected="false" data-en="Notes">Notas</button>
     </nav>
   </header>
 
   <div id="stBar">
-    <span id="stTxt">A verificar o armazenamento...</span>
+    <span id="stTxt" data-en="Checking storage...">A verificar o armazenamento...</span>
     <span class="push">
-      <button id="fhNew">Criar ficheiro de dados</button>
-      <button id="fhOpen">Abrir ficheiro de dados</button>
-      <button id="syncNow">Sincronizar</button>
-      <button id="bkExp">Exportar cópia</button>
-      <button id="bkImpBtn">Importar</button>
+      <button id="fhNew" data-en="Create data file">Criar ficheiro de dados</button>
+      <button id="fhOpen" data-en="Open data file">Abrir ficheiro de dados</button>
+      <button id="syncNow" data-en="Sync">Sincronizar</button>
+      <button id="bkExp" data-en="Export copy">Exportar cópia</button>
+      <button id="bkImpBtn" data-en="Import">Importar</button>
       <input type="file" id="bkImp" accept=".json,application/json" class="hidden">
     </span>
   </div>
@@ -407,53 +411,57 @@
   <div class="nuv off" id="nuvBar">
     <span id="nuvTxt"></span>
     <span class="bs">
-      <button id="nuvPull">Trazer da nuvem</button>
-      <button id="nuvPush">Enviar agora</button>
+      <button id="nuvPull" data-en="Pull from cloud">Trazer da nuvem</button>
+      <button id="nuvPush" data-en="Send now">Enviar agora</button>
     </span>
   </div>
 
   <div id="syncBar"><span id="syncTxt"></span><span class="bs" id="syncBtns"></span></div>
 
   <div class="panel" id="onboard" style="border-left:4px solid var(--warn);display:none">
-    <h2 style="color:var(--warn)">Liga um ficheiro de dados antes de trabalhares</h2>
-    <p class="hint">Estás a abrir esta app a partir do disco, e nessa situação o navegador não deixa gravar nada por conta própria. A solução é a app escrever num ficheiro teu, que fica onde tu quiseres, por exemplo ao lado deste HTML ou numa pasta sincronizada.</p>
-    <p class="hint"><b>Primeira vez:</b> clica em Criar ficheiro de dados, dá-lhe o nome agenda-dados.json e escolhe a pasta. A partir daí a app grava lá sozinha a cada alteração.<br>
+    <h2 style="color:var(--warn)" data-en="Connect a data file before working">Liga um ficheiro de dados antes de trabalhares</h2>
+    <p class="hint" data-en="You are opening this app from disk, and in that situation the browser won't let it save anything on its own. The fix is for the app to write to a file of yours, kept wherever you like, e.g. next to this HTML or in a synced folder.">Estás a abrir esta app a partir do disco, e nessa situação o navegador não deixa gravar nada por conta própria. A solução é a app escrever num ficheiro teu, que fica onde tu quiseres, por exemplo ao lado deste HTML ou numa pasta sincronizada.</p>
+    <p class="hint" data-en="<b>First time:</b> click Create data file, name it agenda-dados.json and choose the folder. From then on the app saves there by itself on every change.<br><b>Next times:</b> click Open data file and pick that same file. One click per session — the price of having no server.">
+    <b>Primeira vez:</b> clica em Criar ficheiro de dados, dá-lhe o nome agenda-dados.json e escolhe a pasta. A partir daí a app grava lá sozinha a cada alteração.<br>
     <b>Nas vezes seguintes:</b> clica em Abrir ficheiro de dados e escolhe esse mesmo ficheiro. É um clique por sessão, e é o preço de não haver servidor.</p>
-    <p class="hint" id="onboardNo" style="color:var(--warn);display:none"><b>Este navegador não suporta escrita em ficheiro.</b> Usa o Chrome ou o Edge, ou então trabalha com Exportar cópia no fim de cada sessão e Importar no início.</p>
+    <p class="hint" id="onboardNo" style="color:var(--warn);display:none" data-en="<b>This browser does not support writing to a file.</b> Use Chrome or Edge, or work with Export copy at the end of each session and Import at the start."><b>Este navegador não suporta escrita em ficheiro.</b> Usa o Chrome ou o Edge, ou então trabalha com Exportar cópia no fim de cada sessão e Importar no início.</p>
   </div>
 
   <main>
     <section id="v-busca" class="hidden">
       <div class="panel">
-        <h2>Resultados <span class="c" id="qCount"></span></h2>
+        <h2><span data-en="Results">Resultados</span> <span class="c" id="qCount"></span></h2>
         <div id="qResults"></div>
-        <div class="btnrow"><button class="cta ghost" id="qClear">Limpar procura</button></div>
+        <div class="btnrow"><button class="cta ghost" id="qClear" data-en="Clear search">Limpar procura</button></div>
       </div>
     </section>
 
     <!-- PAINEL -->
     <section id="v-painel" class="hidden">
       <div class="panel">
-        <h2>Painel comercial <span class="c" id="pnMes"></span></h2>
-        <div class="addrow" style="margin:0 0 14px"><select id="pnSel" style="width:200px;flex:none"></select></div>
+        <h2><span data-en="Commercial dashboard">Painel comercial</span> <span class="c" id="pnMes"></span></h2>
+        <div class="addrow" style="margin:0 0 14px">
+          <select id="pnSelMes" style="width:150px;flex:none"></select>
+          <select id="pnSelAno" style="width:110px;flex:none"></select>
+        </div>
         <div class="kpis" id="pnTop"></div>
-        <h3 class="sub">Funil do mês</h3>
+        <h3 class="sub" data-en="Month's funnel">Funil do mês</h3>
         <div class="funil" id="pnFunil"></div>
-        <h3 class="sub">Adjudicado por área de serviço</h3>
+        <h3 class="sub" data-en="Awarded by service area">Adjudicado por área de serviço</h3>
         <div class="mix" id="pnMix"></div>
       </div>
       <div class="panel">
-        <h2>Evolução</h2>
+        <h2 data-en="Evolution">Evolução</h2>
         <p class="hint" id="pnEvoT"></p>
         <div class="evo" id="pnEvo"></div>
         <div class="evolab" id="pnEvoL"></div>
       </div>
       <div class="panel">
-        <h2>Execução pessoal <span class="c" id="pnExecM"></span></h2>
+        <h2><span data-en="Personal execution">Execução pessoal</span> <span class="c" id="pnExecM"></span></h2>
         <div class="kpis" id="pnExec"></div>
       </div>
       <div class="panel">
-        <h2>Sinais de alerta</h2>
+        <h2 data-en="Warning signs">Sinais de alerta</h2>
         <ul class="alist" id="pnAlert"></ul>
       </div>
     </section>
@@ -469,18 +477,18 @@
         </div>
         <div class="cal" id="cal"></div>
         <div class="callegend">
-          <span><i style="background:var(--cS)"></i>Serviços, segunda e terça</span>
-          <span><i style="background:var(--cB)"></i>Bicicletas, quarta e quinta</span>
-          <span><i style="background:var(--cD)"></i>Diversos, sexta</span>
-          <span><i style="background:var(--navy);width:7px;height:7px;border-radius:50%"></i>tem ata</span>
-          <span><i style="background:var(--signal);width:8px;height:8px"></i>feira</span>
-          <span><i style="background:var(--visita);width:7px;height:7px;border-radius:50%"></i>visita a cliente</span>
+          <span><i style="background:var(--cS)"></i><span data-en="Services, Mon and Tue">Serviços, segunda e terça</span></span>
+          <span><i style="background:var(--cB)"></i><span data-en="Bicycles, Wed and Thu">Bicicletas, quarta e quinta</span></span>
+          <span><i style="background:var(--cD)"></i><span data-en="Other, Friday">Diversos, sexta</span></span>
+          <span><i style="background:var(--navy);width:7px;height:7px;border-radius:50%"></i><span data-en="has minutes">tem ata</span></span>
+          <span><i style="background:var(--signal);width:8px;height:8px"></i><span data-en="fair">feira</span></span>
+          <span><i style="background:var(--visita);width:7px;height:7px;border-radius:50%"></i><span data-en="client visit">visita a cliente</span></span>
         </div>
         <div class="strip">
-          <span>Tópicos ativos <b id="sTop">0/5</b></span>
-          <span id="sLateWrap">Fora de prazo <b id="sLate">0</b></span>
-          <span>Abertas este mês <b id="sMonth">0</b></span>
-          <span>Fechadas este mês <b id="sDone">0</b></span>
+          <span><span data-en="Active topics">Tópicos ativos</span> <b id="sTop">0/5</b></span>
+          <span id="sLateWrap"><span data-en="Overdue">Fora de prazo</span> <b id="sLate">0</b></span>
+          <span><span data-en="Open this month">Abertas este mês</span> <b id="sMonth">0</b></span>
+          <span><span data-en="Closed this month">Fechadas este mês</span> <b id="sDone">0</b></span>
           <span>SSI <b id="sSsi">42</b></span>
         </div>
       </div>
@@ -489,62 +497,62 @@
         <p class="daytitle" id="dayTitle">.</p>
         <p class="daymode" id="dayMode">.</p>
         <div class="feibar" id="dayFeira" style="display:none"></div>
-        <h2>Tarefas do dia <span class="c" id="dayTaskC"></span></h2>
+        <h2><span data-en="Today's tasks">Tarefas do dia</span> <span class="c" id="dayTaskC"></span></h2>
         <ul class="tasks" id="dayTasks"></ul>
         <div class="addrow">
-          <input type="text" id="qt" placeholder="Nova tarefa neste dia">
+          <input type="text" id="qt" placeholder="Nova tarefa neste dia" data-en-ph="New task on this day">
           <select id="qtTop"></select>
           <input type="date" id="qtd" title="Prazo">
-          <button class="cta" id="qtBtn">Adicionar</button>
+          <button class="cta" id="qtBtn" data-en="Add">Adicionar</button>
         </div>
       </div>
 
       <div class="panel">
-        <h2>O que fechar hoje</h2>
-        <p class="hint">Lê o estado real: fora de prazo, prazos do mês, tópicos ativos, o que aguarda terceiros, o SSI e o domínio do dia.</p>
-        <button class="cta" id="aiBtn">Pedir prioridade do dia</button>
+        <h2 data-en="What to close today">O que fechar hoje</h2>
+        <p class="hint" data-en="Read the real state: overdue, this month's deadlines, active topics, what's waiting on others, the SSI and today's domain.">Lê o estado real: fora de prazo, prazos do mês, tópicos ativos, o que aguarda terceiros, o SSI e o domínio do dia.</p>
+        <button class="cta" id="aiBtn" data-en="Ask for today's priority">Pedir prioridade do dia</button>
         <div id="aiOut"></div>
       </div>
 
       <div class="panel ssi">
-        <h2>Objetivo: SSI número 1 da equipa <span class="c" id="ssiNow"></span></h2>
-        <p class="hint">Ponto de partida a 3 de setembro: 42,16 de 100, sexto de oito, média da equipa 44. A barra amarela é a meta, a vermelha é a equipa.</p>
+        <h2><span data-en="Goal: team's number 1 SSI">Objetivo: SSI número 1 da equipa</span> <span class="c" id="ssiNow"></span></h2>
+        <p class="hint" data-en="Starting point on September 3rd: 42.16 of 100, sixth of eight, team average 44. The yellow bar is the target, the red one is the team.">Ponto de partida a 3 de setembro: 42,16 de 100, sexto de oito, média da equipa 44. A barra amarela é a meta, a vermelha é a equipa.</p>
         <div class="bars" id="ssiBars"></div>
-        <h3 class="sub">Registo semanal, sexta-feira, em linkedin.com/sales/ssi</h3>
+        <h3 class="sub" data-en="Weekly log, Friday, at linkedin.com/sales/ssi">Registo semanal, sexta-feira, em linkedin.com/sales/ssi</h3>
         <div class="grid5">
-          <div><label class="f" for="s1">Marca</label><input type="number" id="s1" step="0.01" min="0" max="25"></div>
-          <div><label class="f" for="s2">Pessoas certas</label><input type="number" id="s2" step="0.01" min="0" max="25"></div>
-          <div><label class="f" for="s3">Insights</label><input type="number" id="s3" step="0.01" min="0" max="25"></div>
-          <div><label class="f" for="s4">Relacionamentos</label><input type="number" id="s4" step="0.01" min="0" max="25"></div>
-          <div><label class="f" for="s5">Posição</label><input type="number" id="s5" step="1" min="1" max="30"></div>
+          <div><label class="f" for="s1" data-en="Brand">Marca</label><input type="number" id="s1" step="0.01" min="0" max="25"></div>
+          <div><label class="f" for="s2" data-en="Right people">Pessoas certas</label><input type="number" id="s2" step="0.01" min="0" max="25"></div>
+          <div><label class="f" for="s3" data-en="Insights">Insights</label><input type="number" id="s3" step="0.01" min="0" max="25"></div>
+          <div><label class="f" for="s4" data-en="Relationships">Relacionamentos</label><input type="number" id="s4" step="0.01" min="0" max="25"></div>
+          <div><label class="f" for="s5" data-en="Rank">Posição</label><input type="number" id="s5" step="1" min="1" max="30"></div>
         </div>
-        <div class="btnrow"><button class="cta ghost" id="ssiBtn">Registar leitura de hoje</button></div>
+        <div class="btnrow"><button class="cta ghost" id="ssiBtn" data-en="Log today's reading">Registar leitura de hoje</button></div>
         <ul class="ssihist" id="ssiHist"></ul>
       </div>
 
       <div class="panel">
-        <h2>Reuniões <span class="c" id="dayMomC"></span></h2>
+        <h2><span data-en="Meetings">Reuniões</span> <span class="c" id="dayMomC"></span></h2>
         <div id="dayMoms"></div>
-        <div class="btnrow"><button class="cta ghost" id="newMomBtn">Nova ata neste dia</button></div>
+        <div class="btnrow"><button class="cta ghost" id="newMomBtn" data-en="New minutes on this day">Nova ata neste dia</button></div>
         <div id="momHostDia"></div>
       </div>
 
       <div class="panel">
-        <h2>Rituais fixos</h2>
+        <h2 data-en="Fixed rituals">Rituais fixos</h2>
         <ul class="rituals" id="rituals"></ul>
       </div>
 
       <div class="panel">
-        <h2>Bloco central: <span id="blocoNome">.</span></h2>
-        <p class="hint">Três horas seguidas, sem inbox e sem telefone.</p>
+        <h2><span data-en="Core block:">Bloco central:</span> <span id="blocoNome">.</span></h2>
+        <p class="hint" data-en="Three hours straight, no inbox and no phone.">Três horas seguidas, sem inbox e sem telefone.</p>
         <div id="dayTopics"></div>
       </div>
 
       <div class="panel">
-        <h2>Fechar uma coisa hoje</h2>
+        <h2 data-en="Close one thing today">Fechar uma coisa hoje</h2>
         <div class="addrow">
-          <input type="text" id="closeInput" placeholder="O que fechaste neste dia">
-          <button class="cta" id="closeBtn">Registar</button>
+          <input type="text" id="closeInput" placeholder="O que fechaste neste dia" data-en-ph="What you closed on this day">
+          <button class="cta" id="closeBtn" data-en="Log">Registar</button>
         </div>
         <div id="closeShow"></div>
       </div>
@@ -552,44 +560,44 @@
 
     <!-- TAREFAS -->
     <section id="v-tarefas" class="hidden">
-      <div class="panel"><h2>Fora de prazo <span class="c" id="cLate"></span></h2><ul class="tasks" id="lateList"></ul></div>
-      <div class="panel"><h2>Próximos sete dias <span class="c" id="cSoon"></span></h2><ul class="tasks" id="soonList"></ul></div>
-      <div class="panel"><h2>Resto do mês <span class="c" id="cRest"></span></h2><ul class="tasks" id="restList"></ul></div>
-      <div class="panel"><h2>Meses seguintes <span class="c" id="cLater"></span></h2><ul class="tasks" id="laterList"></ul></div>
+      <div class="panel"><h2><span data-en="Overdue">Fora de prazo</span> <span class="c" id="cLate"></span></h2><ul class="tasks" id="lateList"></ul></div>
+      <div class="panel"><h2><span data-en="Next seven days">Próximos sete dias</span> <span class="c" id="cSoon"></span></h2><ul class="tasks" id="soonList"></ul></div>
+      <div class="panel"><h2><span data-en="Rest of the month">Resto do mês</span> <span class="c" id="cRest"></span></h2><ul class="tasks" id="restList"></ul></div>
+      <div class="panel"><h2><span data-en="Following months">Meses seguintes</span> <span class="c" id="cLater"></span></h2><ul class="tasks" id="laterList"></ul></div>
       <div class="panel">
-        <h2>Nova tarefa</h2>
-        <p class="hint">A data é obrigatória. O tópico é opcional, mas sem ele a tarefa fica órfã e não entra no histórico do assunto.</p>
+        <h2 data-en="New task">Nova tarefa</h2>
+        <p class="hint" data-en="The date is required. The topic is optional, but without it the task is orphaned and doesn't enter the subject's history.">A data é obrigatória. O tópico é opcional, mas sem ele a tarefa fica órfã e não entra no histórico do assunto.</p>
         <div class="grid4">
-          <div><label class="f" for="ntT">Tarefa</label><input type="text" id="ntT" placeholder="Verbo mais objeto"></div>
-          <div><label class="f" for="ntTop">Tópico</label><select id="ntTop"></select></div>
-          <div><label class="f" for="ntD">Domínio</label>
-            <select id="ntD"><option value="servicos">Serviços</option><option value="bicicletas">Bicicletas</option><option value="diversos">Diversos e institucional</option></select></div>
-          <div><label class="f" for="ntP">Prazo</label><input type="date" id="ntP"></div>
+          <div><label class="f" for="ntT" data-en="Task">Tarefa</label><input type="text" id="ntT" placeholder="Verbo mais objeto" data-en-ph="Verb plus object"></div>
+          <div><label class="f" for="ntTop" data-en="Topic">Tópico</label><select id="ntTop"></select></div>
+          <div><label class="f" for="ntD" data-en="Domain">Domínio</label>
+            <select id="ntD"><option value="servicos" data-en="Services">Serviços</option><option value="bicicletas" data-en="Bicycles">Bicicletas</option><option value="diversos" data-en="Other and institutional">Diversos e institucional</option></select></div>
+          <div><label class="f" for="ntP" data-en="Due date">Prazo</label><input type="date" id="ntP"></div>
         </div>
-        <div class="btnrow"><button class="cta" id="ntBtn">Adicionar tarefa</button></div>
+        <div class="btnrow"><button class="cta" id="ntBtn" data-en="Add task">Adicionar tarefa</button></div>
       </div>
     </section>
 
     <!-- TOPICOS -->
     <section id="v-topicos" class="hidden">
       <div class="panel">
-        <h2>Todos os tópicos</h2>
-        <p class="hint">Ativo é o que estás a mover esta semana, limite cinco. À espera não conta para o limite. Cada tópico mostra as tarefas e atas que lhe estão agarradas.</p>
+        <h2 data-en="All topics">Todos os tópicos</h2>
+        <p class="hint" data-en="Active is what you're moving this week, limit five. Waiting doesn't count towards the limit. Each topic shows the tasks and minutes attached to it.">Ativo é o que estás a mover esta semana, limite cinco. À espera não conta para o limite. Cada tópico mostra as tarefas e atas que lhe estão agarradas.</p>
         <div id="allTopics"></div>
       </div>
       <div class="panel">
-        <h2>Novo tópico</h2>
+        <h2 data-en="New topic">Novo tópico</h2>
         <div class="grid2">
-          <div><label class="f" for="nT">Tópico</label><input type="text" id="nT"></div>
-          <div><label class="f" for="nD">Domínio</label>
-            <select id="nD"><option value="servicos">Serviços</option><option value="bicicletas">Bicicletas</option><option value="diversos">Diversos e institucional</option></select></div>
+          <div><label class="f" for="nT" data-en="Topic">Tópico</label><input type="text" id="nT"></div>
+          <div><label class="f" for="nD" data-en="Domain">Domínio</label>
+            <select id="nD"><option value="servicos" data-en="Services">Serviços</option><option value="bicicletas" data-en="Bicycles">Bicicletas</option><option value="diversos" data-en="Other and institutional">Diversos e institucional</option></select></div>
         </div>
         <div class="grid3" style="margin-top:10px">
-          <div><label class="f" for="nP">Próxima ação, uma só</label><input type="text" id="nP"></div>
-          <div><label class="f" for="nA">À espera de</label><input type="text" id="nA"></div>
-          <div><label class="f" for="nR">Revisão</label><input type="date" id="nR"></div>
+          <div><label class="f" for="nP" data-en="Next action, just one">Próxima ação, uma só</label><input type="text" id="nP"></div>
+          <div><label class="f" for="nA" data-en="Waiting on">À espera de</label><input type="text" id="nA"></div>
+          <div><label class="f" for="nR" data-en="Review">Revisão</label><input type="date" id="nR"></div>
         </div>
-        <div class="btnrow"><button class="cta" id="addBtn">Adicionar tópico</button></div>
+        <div class="btnrow"><button class="cta" id="addBtn" data-en="Add topic">Adicionar tópico</button></div>
       </div>
     </section>
 
@@ -597,11 +605,11 @@
     <section id="v-crm" class="hidden">
       <div class="panel">
         <h2>CRM <span class="c" id="crmC"></span></h2>
-        <p class="hint">Clientes independentes dos tópicos e tarefas — liga-os só se quiseres. Contactos, último contacto, RFQs linha a linha e valor total. Serve para trabalhar a carteira e para apresentar ao Benoit e à Marilyne.</p>
+        <p class="hint" data-en="Clients independent from topics and tasks — link them only if you want to. Contacts, last contact, RFQs line by line and total value. For working the pipeline and presenting to Benoit and Marilyne.">Clientes independentes dos tópicos e tarefas — liga-os só se quiseres. Contactos, último contacto, RFQs linha a linha e valor total. Serve para trabalhar a carteira e para apresentar ao Benoit e à Marilyne.</p>
         <div class="addrow" id="crmFiltros" style="margin:0 0 14px">
-          <button class="cta ghost" data-crmf="todos">Todos</button>
-          <button class="cta ghost" data-crmf="servicos">Serviços</button>
-          <button class="cta ghost" data-crmf="bicicletas">Bicicletas</button>
+          <button class="cta ghost" data-crmf="todos" data-en="All">Todos</button>
+          <button class="cta ghost" data-crmf="servicos" data-en="Services">Serviços</button>
+          <button class="cta ghost" data-crmf="bicicletas" data-en="Bicycles">Bicicletas</button>
         </div>
         <div class="kpis" id="crmTop"></div>
         <div id="crmGrid" class="crmgrid"></div>
@@ -609,22 +617,22 @@
       <div class="panel" id="crmMesHost"></div>
       <div class="panel" id="crmEditorHost"></div>
       <div class="panel">
-        <h2>Novo cliente CRM</h2>
+        <h2 data-en="New CRM client">Novo cliente CRM</h2>
         <div class="grid2">
-          <div><label class="f" for="ncNome">Nome do cliente</label><input type="text" id="ncNome"></div>
-          <div><label class="f" for="ncDom">Domínio</label>
-            <select id="ncDom"><option value="servicos">Serviços</option><option value="bicicletas">Bicicletas</option><option value="diversos">Diversos e institucional</option></select></div>
+          <div><label class="f" for="ncNome" data-en="Client name">Nome do cliente</label><input type="text" id="ncNome"></div>
+          <div><label class="f" for="ncDom" data-en="Domain">Domínio</label>
+            <select id="ncDom"><option value="servicos" data-en="Services">Serviços</option><option value="bicicletas" data-en="Bicycles">Bicicletas</option><option value="diversos" data-en="Other and institutional">Diversos e institucional</option></select></div>
         </div>
-        <div class="btnrow"><button class="cta" id="ncAdd">Adicionar cliente</button></div>
+        <div class="btnrow"><button class="cta" id="ncAdd" data-en="Add client">Adicionar cliente</button></div>
       </div>
     </section>
 
     <!-- ATAS -->
     <section id="v-atas" class="hidden">
       <div class="panel">
-        <h2>Atas <span class="c" id="momC"></span></h2>
-        <p class="hint">Tudo fica em texto na página, por isso o Ctrl+F do navegador encontra qualquer palavra.</p>
-        <div class="btnrow" style="margin:0 0 6px"><button class="cta ghost" id="newMomBtn2">Nova ata</button></div>
+        <h2><span data-en="Minutes">Atas</span> <span class="c" id="momC"></span></h2>
+        <p class="hint" data-en="Everything stays as text on the page, so the browser's Ctrl+F finds any word.">Tudo fica em texto na página, por isso o Ctrl+F do navegador encontra qualquer palavra.</p>
+        <div class="btnrow" style="margin:0 0 6px"><button class="cta ghost" id="newMomBtn2" data-en="New minutes">Nova ata</button></div>
         <div id="momHostAtas"></div>
         <div id="momList"></div>
       </div>
@@ -633,28 +641,28 @@
     <!-- FEIRAS -->
     <section id="v-feiras" class="hidden">
       <div class="panel">
-        <h2>Feiras, eventos e visitas a clientes <span class="c" id="feiC"></span></h2>
-        <p class="hint">Cada feira ou visita guarda o que queres ver, as reuniões que tiveste e o registo do que foi discutido. As visitas a cliente aparecem com uma cor diferente. Os dias aparecem marcados no calendário da agenda.</p>
+        <h2><span data-en="Fairs, events and client visits">Feiras, eventos e visitas a clientes</span> <span class="c" id="feiC"></span></h2>
+        <p class="hint" data-en="Each fair or visit keeps what you want to check, the meetings you had and the record of what was discussed. Client visits show up in a different colour. Days show up marked on the agenda calendar.">Cada feira ou visita guarda o que queres ver, as reuniões que tiveste e o registo do que foi discutido. As visitas a cliente aparecem com uma cor diferente. Os dias aparecem marcados no calendário da agenda.</p>
         <div class="addrow" id="feiFiltros" style="margin:0 0 14px">
           <select id="fTipo" style="width:auto;flex:none">
-            <option value="todos">Feiras e visitas</option>
-            <option value="feira">Só feiras/eventos</option>
-            <option value="visita">Só visitas a clientes</option>
+            <option value="todos" data-en="Fairs and visits">Feiras e visitas</option>
+            <option value="feira" data-en="Fairs/events only">Só feiras/eventos</option>
+            <option value="visita" data-en="Client visits only">Só visitas a clientes</option>
           </select>
           <select id="fPais" style="width:auto;flex:none">
-            <option value="todos">Todas as zonas</option>
-            <option value="ib">Só Portugal e Espanha</option>
+            <option value="todos" data-en="All zones">Todas as zonas</option>
+            <option value="ib" data-en="Portugal and Spain only">Só Portugal e Espanha</option>
           </select>
           <select id="fCat" style="width:auto;flex:none"></select>
           <select id="fEst" style="width:auto;flex:none">
-            <option value="ativas">Por acontecer</option>
-            <option value="decidido">Decididas e inscritas</option>
-            <option value="passadas">Passadas</option>
-            <option value="todas">Todas</option>
+            <option value="ativas" data-en="Upcoming">Por acontecer</option>
+            <option value="decidido" data-en="Decided and registered">Decididas e inscritas</option>
+            <option value="passadas" data-en="Past">Passadas</option>
+            <option value="todas" data-en="All">Todas</option>
           </select>
-          <button class="cta ghost" id="feiNova" style="margin:0">Nova feira</button>
-          <button class="cta ghost" id="feiNovaVisita" style="margin:0">Nova visita a cliente</button>
-          <button class="cta ghost" id="feiDl" style="margin:0">Descarregar .md</button>
+          <button class="cta ghost" id="feiNova" style="margin:0" data-en="New fair">Nova feira</button>
+          <button class="cta ghost" id="feiNovaVisita" style="margin:0" data-en="New client visit">Nova visita a cliente</button>
+          <button class="cta ghost" id="feiDl" style="margin:0" data-en="Download .md">Descarregar .md</button>
         </div>
         <div id="feiList"></div>
       </div>
@@ -663,11 +671,11 @@
     <!-- ARQUIVO -->
     <section id="v-arquivo" class="hidden">
       <div class="panel">
-        <h2>Arquivo <span class="c" id="arqC"></span></h2>
-        <p class="hint">Tudo o que fechaste, mês a mês, com as notas e o histórico de progresso. O transporte mensal não lhe toca.</p>
+        <h2><span data-en="Archive">Arquivo</span> <span class="c" id="arqC"></span></h2>
+        <p class="hint" data-en="Everything you closed, month by month, with notes and progress history. The monthly rollover doesn't touch it.">Tudo o que fechaste, mês a mês, com as notas e o histórico de progresso. O transporte mensal não lhe toca.</p>
         <div class="addrow" style="margin:0 0 6px">
           <select id="arqSel" style="width:220px;flex:none"></select>
-          <button class="cta ghost" id="arqDl" style="margin:0">Descarregar arquivo .md</button>
+          <button class="cta ghost" id="arqDl" style="margin:0" data-en="Download archive .md">Descarregar arquivo .md</button>
         </div>
         <p class="hint" id="arqMiss" style="margin:10px 0 0"></p>
         <div id="arqList"></div>
@@ -677,122 +685,123 @@
     <!-- DADOS -->
     <section id="v-dados" class="hidden">
       <div class="panel">
-        <h2>Alimentar o painel</h2>
-        <p class="hint">Os números de execução pessoal saem sozinhos das tarefas e dos rituais. RFQ recebidos, cotações enviadas, ganhas, perdidas, sem resposta e em carteira vêm sozinhos do CRM quando há RFQs nesse mês, e ficam bloqueados a cinzento — usa "Editar manualmente" se precisares de corrigir algo. O resto (reuniões, clientes, adjudicado por área) continua manual.</p>
+        <h2 data-en="Feed the dashboard">Alimentar o painel</h2>
+        <p class="hint" data-en='Personal execution numbers come out on their own from tasks and rituals. RFQs received, quotes sent, won, lost, no response and in pipeline come from the CRM by themselves whenever there are RFQs that month, and stay locked grey — use "Edit manually" if you need to fix something. The rest (meetings, clients, awarded by area) stays manual.'>Os números de execução pessoal saem sozinhos das tarefas e dos rituais. RFQ recebidos, cotações enviadas, ganhas, perdidas, sem resposta e em carteira vêm sozinhos do CRM quando há RFQs nesse mês, e ficam bloqueados a cinzento — usa "Editar manualmente" se precisares de corrigir algo. O resto (reuniões, clientes, adjudicado por área) continua manual.</p>
         <div class="hint" id="kpAutoMsg" style="display:none;background:#F0F2F6;padding:7px 11px;margin:0 0 12px"></div>
         <div class="addrow" style="margin:0 0 16px">
-          <select id="kpSel" style="width:200px;flex:none"></select>
-          <button class="cta ghost" id="kpCopy" style="margin:0">Copiar do mês anterior</button>
-          <button class="cta ghost" id="kpFromCrm" style="margin:0">Atualizar a partir do CRM agora</button>
+          <select id="kpSelMes" style="width:150px;flex:none"></select>
+          <select id="kpSelAno" style="width:110px;flex:none"></select>
+          <button class="cta ghost" id="kpCopy" style="margin:0" data-en="Copy from last month">Copiar do mês anterior</button>
+          <button class="cta ghost" id="kpFromCrm" style="margin:0" data-en="Update from CRM now">Atualizar a partir do CRM agora</button>
         </div>
 
-        <h3 class="sub">Procura e cotação</h3>
+        <h3 class="sub" data-en="Prospecting and quoting">Procura e cotação</h3>
         <div class="grid4">
-          <div><label class="f">RFQ recebidos (cadeias novas)</label><input type="number" id="k_rfq" min="0" step="1"></div>
-          <div><label class="f">Cotações enviadas</label><input type="number" id="k_cotN" min="0" step="1"></div>
-          <div><label class="f">Valor cotado, €</label><input type="number" id="k_cotV" min="0" step="100"></div>
-          <div><label class="f">Prazo médio de resposta, dias</label><input type="number" id="k_prazo" min="0" step="0.1"></div>
+          <div><label class="f" data-en="RFQs received (new chains)">RFQ recebidos (cadeias novas)</label><input type="number" id="k_rfq" min="0" step="1"></div>
+          <div><label class="f" data-en="Quotes sent">Cotações enviadas</label><input type="number" id="k_cotN" min="0" step="1"></div>
+          <div><label class="f" data-en="Quoted value, €">Valor cotado, €</label><input type="number" id="k_cotV" min="0" step="100"></div>
+          <div><label class="f" data-en="Average response time, days">Prazo médio de resposta, dias</label><input type="number" id="k_prazo" min="0" step="0.1"></div>
         </div>
-        <h3 class="sub">Decisão</h3>
+        <h3 class="sub" data-en="Decision">Decisão</h3>
         <div class="grid4">
-          <div><label class="f">Ganhas</label><input type="number" id="k_gan" min="0" step="1"></div>
-          <div><label class="f">Valor adjudicado, €</label><input type="number" id="k_ganV" min="0" step="100"></div>
-          <div><label class="f">Perdidas</label><input type="number" id="k_per" min="0" step="1"></div>
-          <div><label class="f">Sem resposta há mais de 30 dias</label><input type="number" id="k_sr" min="0" step="1"></div>
+          <div><label class="f" data-en="Won">Ganhas</label><input type="number" id="k_gan" min="0" step="1"></div>
+          <div><label class="f" data-en="Awarded value, €">Valor adjudicado, €</label><input type="number" id="k_ganV" min="0" step="100"></div>
+          <div><label class="f" data-en="Lost">Perdidas</label><input type="number" id="k_per" min="0" step="1"></div>
+          <div><label class="f" data-en="No response for over 30 days">Sem resposta há mais de 30 dias</label><input type="number" id="k_sr" min="0" step="1"></div>
         </div>
-        <h3 class="sub">Carteira</h3>
+        <h3 class="sub" data-en="Pipeline">Carteira</h3>
         <div class="grid4">
-          <div><label class="f">Clientes ativos distintos</label><input type="number" id="k_cli" min="0" step="1"></div>
-          <div><label class="f">Clientes novos</label><input type="number" id="k_cliN" min="0" step="1"></div>
-          <div><label class="f">Valor de clientes recorrentes, €</label><input type="number" id="k_rep" min="0" step="100"></div>
-          <div><label class="f">Transferidos para o grupo (T3)</label><input type="number" id="k_t3" min="0" step="1"></div>
+          <div><label class="f" data-en="Distinct active clients">Clientes ativos distintos</label><input type="number" id="k_cli" min="0" step="1"></div>
+          <div><label class="f" data-en="New clients">Clientes novos</label><input type="number" id="k_cliN" min="0" step="1"></div>
+          <div><label class="f" data-en="Recurring clients value, €">Valor de clientes recorrentes, €</label><input type="number" id="k_rep" min="0" step="100"></div>
+          <div><label class="f" data-en="Transferred to group (T3)">Transferidos para o grupo (T3)</label><input type="number" id="k_t3" min="0" step="1"></div>
         </div>
-        <h3 class="sub">Atividade comercial</h3>
+        <h3 class="sub" data-en="Commercial activity">Atividade comercial</h3>
         <div class="grid4">
-          <div><label class="f">Reuniões com clientes</label><input type="number" id="k_reu" min="0" step="1"></div>
-          <div><label class="f">Contactos novos qualificados</label><input type="number" id="k_cont" min="0" step="1"></div>
-          <div><label class="f">Cotações em aberto, nº</label><input type="number" id="k_bkN" min="0" step="1"></div>
-          <div><label class="f">Cotações em aberto, €</label><input type="number" id="k_bkV" min="0" step="100"></div>
+          <div><label class="f" data-en="Meetings with clients">Reuniões com clientes</label><input type="number" id="k_reu" min="0" step="1"></div>
+          <div><label class="f" data-en="New qualified contacts">Contactos novos qualificados</label><input type="number" id="k_cont" min="0" step="1"></div>
+          <div><label class="f" data-en="Open quotes, nº">Cotações em aberto, nº</label><input type="number" id="k_bkN" min="0" step="1"></div>
+          <div><label class="f" data-en="Open quotes, €">Cotações em aberto, €</label><input type="number" id="k_bkV" min="0" step="100"></div>
         </div>
-        <h3 class="sub">Adjudicado por área, €</h3>
+        <h3 class="sub" data-en="Awarded by area, €">Adjudicado por área, €</h3>
         <div class="grid3">
-          <div><label class="f">Industrialização</label><input type="number" id="k_aInd" min="0" step="100"></div>
+          <div><label class="f" data-en="Industrialisation">Industrialização</label><input type="number" id="k_aInd" min="0" step="100"></div>
           <div><label class="f">I&amp;D</label><input type="number" id="k_aRd" min="0" step="100"></div>
-          <div><label class="f">Ensaios</label><input type="number" id="k_aEns" min="0" step="100"></div>
+          <div><label class="f" data-en="Testing">Ensaios</label><input type="number" id="k_aEns" min="0" step="100"></div>
         </div>
         <div class="grid3" style="margin-top:10px">
-          <div><label class="f">Metrologia</label><input type="number" id="k_aMet" min="0" step="100"></div>
-          <div><label class="f">Mecânica</label><input type="number" id="k_aMec" min="0" step="100"></div>
-          <div><label class="f">Moldes e ferramentas</label><input type="number" id="k_aMold" min="0" step="100"></div>
+          <div><label class="f" data-en="Metrology">Metrologia</label><input type="number" id="k_aMet" min="0" step="100"></div>
+          <div><label class="f" data-en="Mechanics">Mecânica</label><input type="number" id="k_aMec" min="0" step="100"></div>
+          <div><label class="f" data-en="Moulds and tooling">Moldes e ferramentas</label><input type="number" id="k_aMold" min="0" step="100"></div>
         </div>
         <div class="btnrow">
-          <button class="cta" id="kpSave">Guardar mês</button>
+          <button class="cta" id="kpSave" data-en="Save month">Guardar mês</button>
           <span class="hint" id="kpMsg" style="margin:0"></span>
         </div>
       </div>
       <div class="panel">
-        <h2>Objetivo anual</h2>
+        <h2 data-en="Annual goal">Objetivo anual</h2>
         <div class="grid3">
-          <div><label class="f">Objetivo de adjudicação do ano, €</label><input type="number" id="k_obj" min="0" step="1000"></div>
-          <div><label class="f">Meta de conversão, %</label><input type="number" id="k_objC" min="0" max="100" step="1"></div>
-          <div><label class="f">Meta de prazo de resposta, dias</label><input type="number" id="k_objP" min="0" step="0.5"></div>
+          <div><label class="f" data-en="Annual award goal, €">Objetivo de adjudicação do ano, €</label><input type="number" id="k_obj" min="0" step="1000"></div>
+          <div><label class="f" data-en="Conversion target, %">Meta de conversão, %</label><input type="number" id="k_objC" min="0" max="100" step="1"></div>
+          <div><label class="f" data-en="Response time target, days">Meta de prazo de resposta, dias</label><input type="number" id="k_objP" min="0" step="0.5"></div>
         </div>
-        <div class="btnrow"><button class="cta ghost" id="objSave">Guardar objetivos</button></div>
+        <div class="btnrow"><button class="cta ghost" id="objSave" data-en="Save goals">Guardar objetivos</button></div>
       </div>
     </section>
 
     <!-- MES -->
     <section id="v-mes" class="hidden">
       <div class="panel">
-        <h2>Mês</h2>
+        <h2 data-en="Month">Mês</h2>
         <div class="addrow" style="margin:0 0 14px"><select id="mesSel" style="width:200px;flex:none"></select></div>
         <div class="stats">
-          <div><b id="kD">0</b><small>concluídas</small></div>
-          <div><b id="kA">0</b><small>em aberto</small></div>
-          <div><b id="kL">0</b><small>fora de prazo</small></div>
-          <div><b id="kM">0</b><small>reuniões</small></div>
+          <div><b id="kD">0</b><small data-en="completed">concluídas</small></div>
+          <div><b id="kA">0</b><small data-en="open">em aberto</small></div>
+          <div><b id="kL">0</b><small data-en="overdue">fora de prazo</small></div>
+          <div><b id="kM">0</b><small data-en="meetings">reuniões</small></div>
         </div>
-        <p class="hint">O transporte empurra o prazo de cada tarefa aberta para o mês seguinte, no mesmo dia. As fechadas ficam no arquivo.</p>
+        <p class="hint" data-en="Rollover pushes each open task's deadline to the next month, same day. Closed ones stay in the archive.">O transporte empurra o prazo de cada tarefa aberta para o mês seguinte, no mesmo dia. As fechadas ficam no arquivo.</p>
         <div class="btnrow">
-          <button class="cta" id="rollBtn">Transportar</button>
-          <button class="cta ghost" id="expBtn">Gerar relatório do mês</button>
+          <button class="cta" id="rollBtn" data-en="Roll over">Transportar</button>
+          <button class="cta ghost" id="expBtn" data-en="Generate month's report">Gerar relatório do mês</button>
         </div>
       </div>
       <div class="panel">
-        <h2>Relatório e nota mensal</h2>
-        <p class="hint">Isto fica sempre aqui, é o teu registo do mês. Não precisas de exportar nada — quando quiseres apresentar a Benoit e à Mary, gera antes o prompt em baixo e cola numa conversa à parte com o Claude, que te devolve o relatório já escrito e pronto a apresentar.</p>
+        <h2 data-en="Monthly report and note">Relatório e nota mensal</h2>
+        <p class="hint" data-en="This always stays here, it's your record of the month. You don't need to export anything — when you want to present to Benoit and Mary, generate the prompt below instead and paste it into a separate conversation with Claude, which hands you back the report already written and ready to present.">Isto fica sempre aqui, é o teu registo do mês. Não precisas de exportar nada — quando quiseres apresentar a Benoit e à Mary, gera antes o prompt em baixo e cola numa conversa à parte com o Claude, que te devolve o relatório já escrito e pronto a apresentar.</p>
         <textarea id="rep" class="mono" style="min-height:340px"></textarea>
         <div class="btnrow">
-          <button class="cta ghost" id="copyBtn">Copiar</button>
-          <button class="cta ghost" id="dlBtn">Descarregar .md</button>
-          <button class="cta" id="promptMesBtn">Gerar prompt para o Claude</button>
+          <button class="cta ghost" id="copyBtn" data-en="Copy">Copiar</button>
+          <button class="cta ghost" id="dlBtn" data-en="Download .md">Descarregar .md</button>
+          <button class="cta" id="promptMesBtn" data-en="Generate prompt for Claude">Gerar prompt para o Claude</button>
         </div>
         <div id="promptMesOut"></div>
       </div>
       <div class="panel">
-        <h2>Dados e cópia de segurança</h2>
+        <h2 data-en="Data and backup">Dados e cópia de segurança</h2>
         <p class="hint" id="stDetail"></p>
-        <h3 class="sub">Sincronização na nuvem</h3>
-        <p class="hint">Preenche isto uma vez em cada dispositivo, com os mesmos três valores. Os dados vão cifrados a partir daqui: o serviço guarda um bloco que ninguém consegue ler sem a palavra-passe, nem quem tiver o endereço e o token. Se perderes a palavra-passe, os dados na nuvem ficam irrecuperáveis, por isso guarda-a no teu gestor de senhas.</p>
+        <h3 class="sub" data-en="Cloud sync">Sincronização na nuvem</h3>
+        <p class="hint" data-en="Fill this in once on each device, with the same three values. Data leaves already encrypted from here: the service keeps a block nobody can read without the password, not even someone with the address and the token. If you lose the password, the cloud data becomes unrecoverable, so keep it in your password manager.">Preenche isto uma vez em cada dispositivo, com os mesmos três valores. Os dados vão cifrados a partir daqui: o serviço guarda um bloco que ninguém consegue ler sem a palavra-passe, nem quem tiver o endereço e o token. Se perderes a palavra-passe, os dados na nuvem ficam irrecuperáveis, por isso guarda-a no teu gestor de senhas.</p>
         <div class="grid3">
-          <div><label class="f" for="nv_url">Endereço do serviço</label><input type="text" id="nv_url" placeholder="https://agenda-sync.xxx.workers.dev/data"></div>
-          <div><label class="f" for="nv_tok">Token</label><input type="text" id="nv_tok" placeholder="o mesmo que puseste no Worker"></div>
-          <div><label class="f" for="nv_pw">Palavra-passe de cifra</label><input type="text" id="nv_pw" placeholder="longa, só tua"></div>
+          <div><label class="f" for="nv_url" data-en="Service address">Endereço do serviço</label><input type="text" id="nv_url" placeholder="https://agenda-sync.xxx.workers.dev/data"></div>
+          <div><label class="f" for="nv_tok" data-en="Token">Token</label><input type="text" id="nv_tok" placeholder="o mesmo que puseste no Worker" data-en-ph="the same one you put in the Worker"></div>
+          <div><label class="f" for="nv_pw" data-en="Encryption password">Palavra-passe de cifra</label><input type="text" id="nv_pw" placeholder="longa, só tua" data-en-ph="long, yours only"></div>
         </div>
         <div class="btnrow">
-          <button class="cta" id="nvSave">Ligar este dispositivo</button>
-          <button class="cta ghost" id="nvOff">Desligar sincronização</button>
-          <span class="hint" style="margin:0">Identificador deste dispositivo: <b id="nv_dev"></b></span>
+          <button class="cta" id="nvSave" data-en="Connect this device">Ligar este dispositivo</button>
+          <button class="cta ghost" id="nvOff" data-en="Turn off sync">Desligar sincronização</button>
+          <span class="hint" style="margin:0"><span data-en="This device's ID:">Identificador deste dispositivo:</span> <b id="nv_dev"></b></span>
         </div>
 
-        <h3 class="sub">Trabalhar no PC e no telefone</h3>
-        <p class="hint">Com a sincronização ligada, o PC e o iPhone escrevem no mesmo sítio. Não há fusão automática de alterações feitas ao mesmo tempo: a app deteta e pergunta. Regra prática, ao chegar a um dispositivo clica em <b>Trazer da nuvem</b> antes de mexer.<br>
+        <h3 class="sub" data-en="Working on PC and phone">Trabalhar no PC e no telefone</h3>
+        <p class="hint" data-en="With sync on, the PC and the iPhone write to the same place. There is no automatic merge of changes made at the same time: the app detects it and asks. Rule of thumb: on arriving at a device, click <b>Pull from cloud</b> before touching anything.<br>If the yellow bar warns that the other device saved after this window loaded, pull first. If it turns red with a conflict, export this window&#39;s version before deciding which one stays.<br>Without a connection the app keeps working and saves on the device. Changes go up by themselves once the network is back.">Com a sincronização ligada, o PC e o iPhone escrevem no mesmo sítio. Não há fusão automática de alterações feitas ao mesmo tempo: a app deteta e pergunta. Regra prática, ao chegar a um dispositivo clica em <b>Trazer da nuvem</b> antes de mexer.<br>
         Se a barra amarela avisar que o outro dispositivo gravou depois, traz primeiro. Se ficar vermelha de conflito, exporta a versão desta janela antes de decidires qual fica.<br>
         Sem ligação a app continua a funcionar e guarda no dispositivo. As alterações sobem sozinhas quando a rede voltar.</p>
         <div class="btnrow">
-          <button class="cta ghost" id="bkExp2">Exportar cópia .json</button>
-          <button class="cta ghost" id="bkImpBtn2">Importar cópia .json</button>
-          <button class="cta ghost" id="wipe">Apagar tudo e recomeçar</button>
+          <button class="cta ghost" id="bkExp2" data-en="Export copy .json">Exportar cópia .json</button>
+          <button class="cta ghost" id="bkImpBtn2" data-en="Import copy .json">Importar cópia .json</button>
+          <button class="cta ghost" id="wipe" data-en="Erase everything and start over">Apagar tudo e recomeçar</button>
         </div>
       </div>
     </section>
@@ -800,34 +809,34 @@
     <!-- SEMANA -->
     <section id="v-semana" class="hidden">
       <div class="panel">
-        <h2>Report semanal <span class="c" id="semC"></span></h2>
-        <p class="hint">Pensado para apresentar a semana anterior ao Benoit e à Mary. Os marcos e as RFQs vêm sozinhos das outras abas — usa o × para tirar algo daqui sem apagar o registo original.</p>
+        <h2><span data-en="Weekly report">Report semanal</span> <span class="c" id="semC"></span></h2>
+        <p class="hint" data-en="Designed to present last week to Benoit and Mary. Milestones and RFQs come in on their own from the other tabs — use the × to remove something from here without deleting the original record.">Pensado para apresentar a semana anterior ao Benoit e à Mary. Os marcos e as RFQs vêm sozinhos das outras abas — usa o × para tirar algo daqui sem apagar o registo original.</p>
         <div class="addrow" style="margin:0 0 14px"><select id="semSel" style="width:260px;flex:none"></select></div>
         <div class="kpis" id="semTop"></div>
       </div>
       <div class="panel">
-        <h2>Funil de RFQs da semana</h2>
+        <h2 data-en="Week's RFQ funnel">Funil de RFQs da semana</h2>
         <div id="semFunil"></div>
       </div>
       <div class="panel">
-        <h2>Marcos da semana <span class="c" id="semMarcosC"></span></h2>
-        <p class="hint">Tópicos fechados, reuniões e visitas desta semana, automaticamente.</p>
+        <h2><span data-en="Week's milestones">Marcos da semana</span> <span class="c" id="semMarcosC"></span></h2>
+        <p class="hint" data-en="Closed topics, meetings and visits from this week, automatically.">Tópicos fechados, reuniões e visitas desta semana, automaticamente.</p>
         <div id="semMarcos" class="semlist"></div>
       </div>
       <div class="panel">
-        <h2>RFQs da semana <span class="c" id="semRfqC"></span></h2>
+        <h2><span data-en="Week's RFQs">RFQs da semana</span> <span class="c" id="semRfqC"></span></h2>
         <div id="semRfqs" class="semlist"></div>
       </div>
       <div class="panel">
-        <h2>Nota livre</h2>
-        <p class="hint">Escreve aqui o que quiseres acrescentar, à tua maneira. Fica guardado por semana.</p>
+        <h2 data-en="Free note">Nota livre</h2>
+        <p class="hint" data-en="Write here whatever you want to add, your way. Saved per week.">Escreve aqui o que quiseres acrescentar, à tua maneira. Fica guardado por semana.</p>
         <textarea id="semNota" style="min-height:140px"></textarea>
       </div>
       <div class="panel">
-        <h2>Apresentar</h2>
+        <h2 data-en="Present">Apresentar</h2>
         <div class="btnrow">
-          <button class="cta ghost" id="semCopy">Copiar texto do report</button>
-          <button class="cta" id="semPromptBtn">Gerar prompt para o Claude</button>
+          <button class="cta ghost" id="semCopy" data-en="Copy report text">Copiar texto do report</button>
+          <button class="cta" id="semPromptBtn" data-en="Generate prompt for Claude">Gerar prompt para o Claude</button>
         </div>
         <div id="semPromptOut"></div>
       </div>
@@ -836,13 +845,13 @@
     <!-- NOTAS -->
     <section id="v-notas" class="hidden">
       <div class="panel">
-        <h2>Notas</h2>
-        <p class="hint">Cadernos e páginas, à tua maneira — nada vem pré-feito. Escreve <code>/</code> em qualquer nota, ata, registo de feira, relatório de mês ou de semana para ligar a um título daqui.</p>
+        <h2 data-en="Notes">Notas</h2>
+        <p class="hint" data-en="Notebooks and pages, your way — nothing comes pre-made. Type <code>/</code> in any note, minutes, fair record, month or week report to link to a title here.">Cadernos e páginas, à tua maneira — nada vem pré-feito. Escreve <code>/</code> em qualquer nota, ata, registo de feira, relatório de mês ou de semana para ligar a um título daqui.</p>
         <div class="notas-tabs" id="notasTabs"></div>
         <div class="notas-toolbar btnrow">
-          <button class="cta ghost" id="notaNovoCaderno">+ Caderno novo</button>
-          <button class="cta ghost" id="notaNovaPagina">+ Página nova</button>
-          <button class="cta ghost" id="notaEditCaderno">Editar caderno</button>
+          <button class="cta ghost" id="notaNovoCaderno" data-en="+ New notebook">+ Caderno novo</button>
+          <button class="cta ghost" id="notaNovaPagina" data-en="+ New page">+ Página nova</button>
+          <button class="cta ghost" id="notaEditCaderno" data-en="Edit notebook">Editar caderno</button>
         </div>
         <div id="notaCadernoEditor"></div>
         <div id="notasPaginas"></div>
@@ -853,11 +862,17 @@
 
 <script>
 const K_CORE='jose:sist:v3:core', K_MOM='jose:sist:v3:moms', K_OLD2='jose:sist:v2:core', K_OLDM='jose:sist:v2:moms';
-const DIAS=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-const MESN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const MS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-const DOW=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-const DOM={servicos:'Serviços',bicicletas:'Bicicletas',diversos:'Diversos e institucional'};
+const DIAS_PT=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const DIAS_EN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MESN_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MESN_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MS_PT=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const MS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW_PT=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const DOW_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DOM_PT={servicos:'Serviços',bicicletas:'Bicicletas',diversos:'Diversos e institucional'};
+const DOM_EN={servicos:'Services',bicicletas:'Bicycles',diversos:'Other and institutional'};
+const DIAS=[...DIAS_PT],MESN=[...MESN_PT],MS=[...MS_PT],DOW=[...DOW_PT],DOM={...DOM_PT};
 const AREAS=[['aInd','Industrialização'],['aRd','I&D'],['aEns','Ensaios'],['aMet','Metrologia'],['aMec','Mecânica'],['aMold','Moldes']];
 const KF=['rfq','cotN','cotV','prazo','gan','ganV','per','sr','cli','cliN','rep','t3','reu','cont','bkN','bkV','aInd','aRd','aEns','aMet','aMec','aMold'];
 const PLANO={
@@ -880,10 +895,36 @@ const SEED_TOP=[
 const SEED_TAR=[
  ['','servicos','Exemplo de tarefa, apaga e cria as tuas','Exemplo']];
 
-let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],semanal:{},notas:{cadernos:[],paginas:[]},rep:'',seeded:false}, M={atas:[]};
+let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],semanal:{},deptCores:{},notas:{cadernos:[],paginas:[]},rep:'',seeded:false}, M={atas:[]};
 const BACKUP=null;
 let viewDate=new Date(), calY=viewDate.getFullYear(), calM=viewDate.getMonth();
 let curMes='', arqMes='todos', pnMes='', kpMes='', momEdit=null, tab='dia', aberto={}, abertoF={};
+let LANG=localStorage.getItem('jose:lang')||'pt';
+function aplicarIdioma(){
+  document.querySelectorAll('[data-en]').forEach(el=>{
+    if(el.dataset.pt===undefined)el.dataset.pt=el.innerHTML;
+    el.innerHTML=LANG==='en'?el.dataset.en:el.dataset.pt;
+  });
+  document.querySelectorAll('[data-en-ph]').forEach(el=>{
+    if(el.dataset.ph===undefined)el.dataset.ph=el.placeholder;
+    el.placeholder=LANG==='en'?el.dataset.enPh:el.dataset.ph;
+  });
+  Object.assign(DOM,LANG==='en'?DOM_EN:DOM_PT);
+  Object.assign(CANAL,LANG==='en'?CANAL_EN:CANAL_PT);
+  Object.assign(ESTADO_RFQ,LANG==='en'?ESTADO_RFQ_EN:ESTADO_RFQ_PT);
+  Object.assign(FCAT,LANG==='en'?FCAT_EN:FCAT_PT);
+  Object.assign(FEST,LANG==='en'?FEST_EN:FEST_PT);
+  DIAS.splice(0,DIAS.length,...(LANG==='en'?DIAS_EN:DIAS_PT));
+  MESN.splice(0,MESN.length,...(LANG==='en'?MESN_EN:MESN_PT));
+  MS.splice(0,MS.length,...(LANG==='en'?MS_EN:MS_PT));
+  DOW.splice(0,DOW.length,...(LANG==='en'?DOW_EN:DOW_PT));
+  const bp=document.getElementById('langPt'),be=document.getElementById('langEn');
+  if(bp&&be){
+    bp.style.background=LANG==='pt'?'var(--navy)':'var(--card)';bp.style.color=LANG==='pt'?'#fff':'var(--navy)';
+    be.style.background=LANG==='en'?'var(--navy)':'var(--card)';be.style.color=LANG==='en'?'#fff':'var(--navy)';
+  }
+}
+function mudarIdioma(l){LANG=l;localStorage.setItem('jose:lang',l);aplicarIdioma();renderAll()}
 
 /* ---------- utilitários ---------- */
 const p2=n=>String(n).padStart(2,'0');
@@ -928,7 +969,7 @@ function pack(){return{app:'agenda-bontaz',versao:9,gerado:new Date().toISOStrin
 function aplicarPack(p){
   if(!p||!p.core)throw new Error('ficheiro sem dados');
   S=p.core;M=p.moms||{atas:[]};
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});M.atas=M.atas||[];
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.deptCores=S.deptCores||{};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});M.atas=M.atas||[];
   if(!S.feiras.length)S.feiras=seedFeiras();
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[];f.tipo=f.tipo||'feira'});
   S.tarefas.forEach(t=>{if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
@@ -1233,7 +1274,7 @@ async function load(){
   else marcar(true);
   let v=await jget(K_CORE);if(!v)v=await jget(K_OLD2);
   if(v)S=Object.assign(S,v);
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.deptCores=S.deptCores||{};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});
   const virgem=!S.seeded&&!S.topicos.length&&!S.tarefas.length;
   if(virgem){try{aplicarPack(BACKUP)}catch(e){
     S.topicos=SEED_TOP.map((s,i)=>({id:'t'+i,titulo:s[0],dominio:s[1],proxima:s[2],aguarda:s[3],estado:s[4],revisao:'',fechadoEm:'',nota:''}));
@@ -1715,12 +1756,24 @@ function renderTopics(){
 
 /* ---------- CRM ---------- */
 let crmFiltro='todos';
-const CANAL={email:'Email',telefone:'Telefone',reuniao:'Reunião',presencial:'Presencial'};
-function crmHash(nome){let h=0;for(let i=0;i<nome.length;i++)h=(h*31+nome.charCodeAt(i))>>>0;return h%360}
-const crmDeptBg=nome=>'hsl('+crmHash(nome)+',55%,88%)';
-const crmDeptFg=nome=>'hsl('+crmHash(nome)+',60%,26%)';
-const ESTADO_RFQ={recebida:'Recebida',aguarda_equipa:'Aguarda análise da equipa',aguarda_cliente:'Aguarda info do cliente',
+const CANAL_PT={email:'Email',telefone:'Telefone',reuniao:'Reunião',presencial:'Presencial'};
+const CANAL_EN={email:'Email',telefone:'Phone',reuniao:'Meeting',presencial:'In person'};
+const CANAL={...CANAL_PT};
+const N_CORES_DEPT=25;
+// angulo dourado: cada cor nova fica o mais longe possivel das anteriores, mesmo com poucos departamentos
+const HUES_DEPT=Array.from({length:N_CORES_DEPT},(_,i)=>Math.round((i*137.508)%360));
+function corDeptIndex(nome){
+  S.deptCores=S.deptCores||{};
+  if(S.deptCores[nome]===undefined){S.deptCores[nome]=Object.keys(S.deptCores).length%N_CORES_DEPT;save()}
+  return S.deptCores[nome];
+}
+const crmDeptBg=nome=>'hsl('+HUES_DEPT[corDeptIndex(nome)]+',58%,87%)';
+const crmDeptFg=nome=>'hsl('+HUES_DEPT[corDeptIndex(nome)]+',65%,25%)';
+const ESTADO_RFQ_PT={recebida:'Recebida',aguarda_equipa:'Aguarda análise da equipa',aguarda_cliente:'Aguarda info do cliente',
   enviada:'Cotação enviada',ganha:'Ganha',perdida:'Perdida',semresposta:'Sem resposta'};
+const ESTADO_RFQ_EN={recebida:'Received',aguarda_equipa:'Awaiting team review',aguarda_cliente:'Awaiting client info',
+  enviada:'Quote sent',ganha:'Won',perdida:'Lost',semresposta:'No response'};
+const ESTADO_RFQ={...ESTADO_RFQ_PT};
 const ESTADO_RFQ_COR={recebida:'#E4E8F0',aguarda_equipa:'#EAE1F5',aguarda_cliente:'#FCE9D6',enviada:'#DCE4F5',
   ganha:'#DCEDE6',perdida:'#FBE0DB',semresposta:'#F3E7CE'};
 const RFQ_ABERTAS_ESTADOS=['recebida','aguarda_equipa','aguarda_cliente','enviada'];
@@ -1941,11 +1994,27 @@ function renderMes(){
 }
 
 /* ---------- painel ---------- */
-function mesesKpi(){
-  const s=new Set([ym(new Date()),...Object.keys(S.kpis)]);
-  return [...s].filter(Boolean).sort();
+const ANO_MIN=2024, ANO_MAX=2100;
+function anosDisponiveis(){
+  const s=new Set([new Date().getFullYear()]);
+  Object.keys(S.kpis).forEach(m=>s.add(+m.slice(0,4)));
+  S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if(r.data)s.add(+r.data.slice(0,4))}));
+  for(let y=ANO_MIN;y<=ANO_MAX;y++)s.add(y);
+  return [...s].sort((a,b)=>a-b);
 }
-function K(m){return S.kpis[m]||{}}
+function popularMesAno(selMes,selAno,valorAtual){
+  selMes.innerHTML=MESN.map((nome,i)=>'<option value="'+p2(i+1)+'">'+nome+'</option>').join('');
+  selAno.innerHTML=anosDisponiveis().map(a=>'<option value="'+a+'">'+a+'</option>').join('');
+  const[ano,mes]=valorAtual.split('-');
+  selMes.value=mes;selAno.value=ano;
+}
+function lerMesAno(selMes,selAno){return selAno.value+'-'+selMes.value}
+function K(m){
+  const stored=S.kpis[m]||{};
+  const crm=crmKpisMes(m);
+  if(crm.rfq>0&&!stored._manual)return Object.assign({},stored,crm);
+  return stored;
+}
 function execMes(m){
   const f=fechadas().filter(t=>t.feitoEm&&t.feitoEm.slice(0,7)===m);
   const noPrazo=f.filter(t=>t.feitoEm<=t.prazo).length;
@@ -1962,10 +2031,8 @@ function kpiEl(v,lab,extra,alert){
     (extra?'<span class="dl '+(extra.d>0?'up':extra.d<0?'dn':'')+'">'+extra.t+'</span>':'')+'</div>';
 }
 function renderPainel(){
-  const ms=mesesKpi();
-  if(!pnMes||!ms.includes(pnMes))pnMes=ms[ms.length-1];
-  const sel=document.getElementById('pnSel');
-  sel.innerHTML=ms.slice().reverse().map(m=>'<option value="'+m+'"'+(m===pnMes?' selected':'')+'>'+ymLabel(m)+'</option>').join('');
+  if(!pnMes)pnMes=ym(new Date());
+  popularMesAno(document.getElementById('pnSelMes'),document.getElementById('pnSelAno'),pnMes);
   document.getElementById('pnMes').textContent=ymLabel(pnMes);
   const k=K(pnMes),kp=K(prevYm(pnMes)),o=S.obj||{};
   const dec=(+k.gan||0)+(+k.per||0);
@@ -1987,13 +2054,13 @@ function renderPainel(){
     return '<div class="bl"><div class="lab"><span>'+n+'</span><b>'+eur(v)+', '+pct(v,tot)+'%</b></div>'+
       '<div class="track"><div class="fill" style="width:'+(v/tot*100)+'%"></div></div></div>'}).join('');
 
-  const serie=ms.slice(-8);
+  const serie=[];for(let i=7;i>=0;i--)serie.push(shiftMonth(pnMes+'-01',-i).slice(0,7));
   const maxV=Math.max(1,...serie.map(m=>+K(m).ganV||0));
   document.getElementById('pnEvo').innerHTML=serie.map(m=>{
     const v=+K(m).ganV||0;
     return '<div class="col"><span class="vl">'+(v?Math.round(v/1000)+'k':'')+'</span><span class="bb" style="height:'+(v/maxV*100)+'%"></span></div>'}).join('');
   document.getElementById('pnEvoL').innerHTML=serie.map(m=>'<span>'+MS[+m.slice(5,7)-1]+'</span>').join('');
-  const anoV=ms.filter(m=>m.slice(0,4)===pnMes.slice(0,4)).reduce((s,m)=>s+(+K(m).ganV||0),0);
+  let anoV=0;for(let mm=1;mm<=12;mm++)anoV+=+K(pnMes.slice(0,4)+'-'+p2(mm)).ganV||0;
   document.getElementById('pnEvoT').textContent=o.ano
     ? 'Adjudicado no ano: '+eur(anoV)+' de '+eur(o.ano)+', '+pct(anoV,o.ano)+' por cento do objetivo. Em carteira: '+eur(+k.bkV||0)+'.'
     : 'Adjudicado no ano: '+eur(anoV)+'. Define o objetivo anual no separador Dados para veres a cobertura.';
@@ -2031,11 +2098,8 @@ function renderPainel(){
 
 /* ---------- dados ---------- */
 function renderDados(){
-  const ms=mesesKpi();
-  if(!kpMes||!ms.includes(kpMes))kpMes=ym(new Date());
-  const sel=document.getElementById('kpSel');
-  const opts=[...new Set([...ms,kpMes,nextYm(ym(new Date()))])].sort().reverse();
-  sel.innerHTML=opts.map(m=>'<option value="'+m+'"'+(m===kpMes?' selected':'')+'>'+ymLabel(m)+'</option>').join('');
+  if(!kpMes)kpMes=ym(new Date());
+  popularMesAno(document.getElementById('kpSelMes'),document.getElementById('kpSelAno'),kpMes);
   const k=K(kpMes);
   const crm=crmKpisMes(kpMes);
   const auto=crm.rfq>0&&!k._manual;
@@ -2070,8 +2134,11 @@ function guardarKpi(){
 }
 
 /* ================= FEIRAS ================= */
-const FCAT={ciclismo:'Ciclismo e produto',logistica:'Logística e frota',mobilidade:'Mobilidade e smart city',automotive:'Automotive e ensaios',servicos:'Subcontratação e serviços',aeroespacial:'Aeroespacial e defesa'};
-const FEST={avaliar:'a avaliar',ir:'decidido ir',inscrito:'inscrito',fui:'fui',passou:'passou',nao:'descartado'};
+const FCAT_PT={ciclismo:'Ciclismo e produto',logistica:'Logística e frota',mobilidade:'Mobilidade e smart city',automotive:'Automotive e ensaios',servicos:'Subcontratação e serviços',aeroespacial:'Aeroespacial e defesa'};
+const FCAT_EN={ciclismo:'Cycling and product',logistica:'Logistics and fleet',mobilidade:'Mobility and smart city',automotive:'Automotive and testing',servicos:'Subcontracting and services',aeroespacial:'Aerospace and defence'};
+const FEST_PT={avaliar:'a avaliar',ir:'decidido ir',inscrito:'inscrito',fui:'fui',passou:'passou',nao:'descartado'};
+const FEST_EN={avaliar:'to assess',ir:'decided to go',inscrito:'registered',fui:'attended',passou:'past',nao:'dropped'};
+const FCAT={...FCAT_PT},FEST={...FEST_PT};
 const SEED_FEIRAS=[];
 function seedFeiras(){
   return SEED_FEIRAS.map((s,i)=>({id:'f'+i,nome:s.n,inicio:s.i,fim:s.f||s.i,local:s.l,pais:s.p,
@@ -3025,11 +3092,15 @@ document.getElementById('semPromptBtn').onclick=mostrarPromptSemana;
 document.getElementById('notaNovoCaderno').onclick=novoCaderno;
 document.getElementById('notaNovaPagina').onclick=novaPagina;
 document.getElementById('notaEditCaderno').onclick=editarCadernoUI;
+document.getElementById('langPt').onclick=()=>mudarIdioma('pt');
+document.getElementById('langEn').onclick=()=>mudarIdioma('en');
 document.getElementById('mesSel').onchange=e=>{curMes=e.target.value;gerarRep();renderMes()};
 document.getElementById('arqSel').onchange=e=>{arqMes=e.target.value;renderArquivo()};
 document.getElementById('arqDl').onclick=()=>dl('arquivo-acoes-'+today()+'.md',arquivoMd());
-document.getElementById('pnSel').onchange=e=>{pnMes=e.target.value;renderPainel()};
-document.getElementById('kpSel').onchange=e=>{kpMes=e.target.value;renderDados()};
+document.getElementById('pnSelMes').onchange=()=>{pnMes=lerMesAno(document.getElementById('pnSelMes'),document.getElementById('pnSelAno'));renderPainel()};
+document.getElementById('pnSelAno').onchange=()=>{pnMes=lerMesAno(document.getElementById('pnSelMes'),document.getElementById('pnSelAno'));renderPainel()};
+document.getElementById('kpSelMes').onchange=()=>{kpMes=lerMesAno(document.getElementById('kpSelMes'),document.getElementById('kpSelAno'));renderDados()};
+document.getElementById('kpSelAno').onchange=()=>{kpMes=lerMesAno(document.getElementById('kpSelMes'),document.getElementById('kpSelAno'));renderDados()};
 document.getElementById('kpSave').onclick=guardarKpi;
 document.getElementById('kpCopy').onclick=()=>{
   const pv=K(prevYm(kpMes));
@@ -3099,7 +3170,7 @@ document.getElementById('nvOff').onclick=()=>{
 
 (async()=>{
   await load();curMes=ym(new Date());pnMes=curMes;kpMes=curMes;
-  renderAll();nuvConfigUI();nuvMarcar(nuvAtiva()?'sinc':'off');
+  aplicarIdioma();renderAll();nuvConfigUI();nuvMarcar(nuvAtiva()?'sinc':'off');
   if(S.rep)document.getElementById('rep').value=S.rep;
   await nuvArranque();
   if('serviceWorker' in navigator){
