@@ -155,6 +155,8 @@
   .anexos{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
   #crmFiltros button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
   #crmTop{grid-template-columns:repeat(3,1fr)}
+  #semTop{grid-template-columns:repeat(5,1fr)}
+  @media (max-width:820px){#semTop{grid-template-columns:repeat(2,1fr)}}
   .crmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
   .crmcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--cS);padding:13px 15px}
   .crmcard.bicicletas{border-top-color:var(--cB)}
@@ -180,6 +182,10 @@
   .mesgrupo h3{font-size:13px;margin:0 0 5px}
   .mesgrupo .ln{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-top:1px solid var(--line)}
   #crmTop .kpi{cursor:pointer}
+  .semlist .ln{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+  .semlist .ln:first-child{border-top:0}
+  .semlist .ln b{font-weight:600}
+  .semlist .ln .tp{color:var(--steel);font-weight:600;margin-right:4px}
   .anexos .an{font-size:13px;padding:3px 0;color:#243049}
   .anexos .an span{color:var(--steel);font-size:11.5px}
   .anexos .an.done{color:var(--steel);text-decoration:line-through}
@@ -360,6 +366,7 @@
       <button role="tab" id="t-arquivo" aria-selected="false">Arquivo</button>
       <button role="tab" id="t-dados" aria-selected="false">Dados</button>
       <button role="tab" id="t-mes" aria-selected="false">Mês</button>
+      <button role="tab" id="t-semana" aria-selected="false">Semana</button>
     </nav>
   </header>
 
@@ -767,6 +774,42 @@
         </div>
       </div>
     </section>
+
+    <!-- SEMANA -->
+    <section id="v-semana" class="hidden">
+      <div class="panel">
+        <h2>Report semanal <span class="c" id="semC"></span></h2>
+        <p class="hint">Pensado para apresentar a semana anterior ao Benoit e à Mary. Os marcos e as RFQs vêm sozinhos das outras abas — usa o × para tirar algo daqui sem apagar o registo original.</p>
+        <div class="addrow" style="margin:0 0 14px"><select id="semSel" style="width:260px;flex:none"></select></div>
+        <div class="kpis" id="semTop"></div>
+      </div>
+      <div class="panel">
+        <h2>Funil de RFQs da semana</h2>
+        <div id="semFunil"></div>
+      </div>
+      <div class="panel">
+        <h2>Marcos da semana <span class="c" id="semMarcosC"></span></h2>
+        <p class="hint">Tópicos fechados, reuniões e visitas desta semana, automaticamente.</p>
+        <div id="semMarcos" class="semlist"></div>
+      </div>
+      <div class="panel">
+        <h2>RFQs da semana <span class="c" id="semRfqC"></span></h2>
+        <div id="semRfqs" class="semlist"></div>
+      </div>
+      <div class="panel">
+        <h2>Nota livre</h2>
+        <p class="hint">Escreve aqui o que quiseres acrescentar, à tua maneira. Fica guardado por semana.</p>
+        <textarea id="semNota" style="min-height:140px"></textarea>
+      </div>
+      <div class="panel">
+        <h2>Apresentar</h2>
+        <div class="btnrow">
+          <button class="cta ghost" id="semCopy">Copiar texto do report</button>
+          <button class="cta" id="semPromptBtn">Gerar prompt para o Claude</button>
+        </div>
+        <div id="semPromptOut"></div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -799,7 +842,7 @@ const SEED_TOP=[
 const SEED_TAR=[
  ['','servicos','Exemplo de tarefa, apaga e cria as tuas','Exemplo']];
 
-let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],rep:'',seeded:false}, M={atas:[]};
+let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],semanal:{},rep:'',seeded:false}, M={atas:[]};
 const BACKUP=null;
 let viewDate=new Date(), calY=viewDate.getFullYear(), calM=viewDate.getMonth();
 let curMes='', arqMes='todos', pnMes='', kpMes='', momEdit=null, tab='dia', aberto={}, abertoF={};
@@ -847,7 +890,7 @@ function pack(){return{app:'agenda-bontaz',versao:9,gerado:new Date().toISOStrin
 function aplicarPack(p){
   if(!p||!p.core)throw new Error('ficheiro sem dados');
   S=p.core;M=p.moms||{atas:[]};
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];M.atas=M.atas||[];
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};M.atas=M.atas||[];
   if(!S.feiras.length)S.feiras=seedFeiras();
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[];f.tipo=f.tipo||'feira'});
   S.tarefas.forEach(t=>{if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
@@ -1152,7 +1195,7 @@ async function load(){
   else marcar(true);
   let v=await jget(K_CORE);if(!v)v=await jget(K_OLD2);
   if(v)S=Object.assign(S,v);
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};
   const virgem=!S.seeded&&!S.topicos.length&&!S.tarefas.length;
   if(virgem){try{aplicarPack(BACKUP)}catch(e){
     S.topicos=SEED_TOP.map((s,i)=>({id:'t'+i,titulo:s[0],dominio:s[1],proxima:s[2],aguarda:s[3],estado:s[4],revisao:'',fechadoEm:'',nota:''}));
@@ -1635,11 +1678,16 @@ const CANAL={email:'Email',telefone:'Telefone',reuniao:'Reunião',presencial:'Pr
 function crmHash(nome){let h=0;for(let i=0;i<nome.length;i++)h=(h*31+nome.charCodeAt(i))>>>0;return h%360}
 const crmDeptBg=nome=>'hsl('+crmHash(nome)+',55%,88%)';
 const crmDeptFg=nome=>'hsl('+crmHash(nome)+',60%,26%)';
-const ESTADO_RFQ={recebida:'Recebida',enviada:'Cotação enviada',ganha:'Ganha',perdida:'Perdida',semresposta:'Sem resposta'};
-const ESTADO_RFQ_COR={recebida:'#E4E8F0',enviada:'#DCE4F5',ganha:'#DCEDE6',perdida:'#FBE0DB',semresposta:'#F3E7CE'};
+const ESTADO_RFQ={recebida:'Recebida',aguarda_equipa:'Aguarda análise da equipa',aguarda_cliente:'Aguarda info do cliente',
+  enviada:'Cotação enviada',ganha:'Ganha',perdida:'Perdida',semresposta:'Sem resposta'};
+const ESTADO_RFQ_COR={recebida:'#E4E8F0',aguarda_equipa:'#EAE1F5',aguarda_cliente:'#FCE9D6',enviada:'#DCE4F5',
+  ganha:'#DCEDE6',perdida:'#FBE0DB',semresposta:'#F3E7CE'};
+const RFQ_ABERTAS_ESTADOS=['recebida','aguarda_equipa','aguarda_cliente','enviada'];
 function estadoRfq(v){v=(v||'').toLowerCase().trim();
   if(v.startsWith('env'))return'enviada';if(v.startsWith('gan'))return'ganha';if(v.startsWith('perd'))return'perdida';
-  if(v.startsWith('sem'))return'semresposta';return'recebida'}
+  if(v.startsWith('sem'))return'semresposta';
+  if(v.includes('equipa'))return'aguarda_equipa';if(v.includes('cliente'))return'aguarda_cliente';
+  return'recebida'}
 function crmLista(){
   return S.crm.filter(c=>crmFiltro==='todos'||c.dominio===crmFiltro);
 }
@@ -1764,8 +1812,8 @@ function crmEdit(c){
     Object.entries(CANAL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
     '<div><label class="f">Data</label><input type="date" id="crmData"></div>'+
     '<div><label class="f">Assunto, para procurar depois</label><input type="text" id="crmAssunto"></div></div>'+
-    '<div style="margin-top:10px"><label class="f">RFQs, uma por linha. Formato: descrição | valor | data aaaa-mm-dd | estado (recebida, enviada, ganha, perdida, sem resposta)</label>'+
-    '<textarea id="crmRfqs" class="mono" style="min-height:70px" placeholder="Cotação linha travagem M2300 | 250000 | 2026-09-10 | enviada"></textarea></div>'+
+    '<div style="margin-top:10px"><label class="f">RFQs, uma por linha. Formato: descrição | valor | data aaaa-mm-dd | estado (recebida, aguarda equipa, aguarda cliente, enviada, ganha, perdida, sem resposta)</label>'+
+    '<textarea id="crmRfqs" class="mono" style="min-height:70px" placeholder="Cotação linha travagem M2300 | 250000 | 2026-09-10 | aguarda equipa"></textarea></div>'+
     '<div style="margin-top:10px"><label class="f">Ligar a um tópico existente, opcional</label>'+
     '<div class="addrow"><select id="crmTopSel"></select><button class="cta ghost" id="crmTopAdd">Ligar</button></div>'+
     '<div id="crmTopLinked" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div></div>'+
@@ -2341,6 +2389,128 @@ function mostrarPromptMes(){
   b.onclick=()=>{ta.select();try{document.execCommand('copy');b.textContent='Copiado'}catch(e){b.textContent='Usa Ctrl+C'}};
   out.appendChild(b);
 }
+
+/* ---------- report semanal ---------- */
+let semMk='';
+function mondayOf(iso){const d=new Date(iso+'T00:00');const wd=(d.getDay()+6)%7;return addDays(key(d),-wd)}
+function weekRangeLabel(mk){
+  const i=new Date(mk+'T00:00'),f=new Date(addDays(mk,6)+'T00:00');
+  return i.getDate()+' '+MS[i.getMonth()]+' a '+f.getDate()+' '+MS[f.getMonth()]+' '+f.getFullYear();
+}
+function semanasDisponiveis(){
+  const set=new Set();
+  S.tarefas.forEach(t=>{if(t.feito&&t.feitoEm)set.add(mondayOf(t.feitoEm))});
+  M.atas.forEach(a=>{if(a.data)set.add(mondayOf(a.data))});
+  S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if(r.data)set.add(mondayOf(r.data))}));
+  set.add(mondayOf(today()));
+  set.add(addDays(mondayOf(today()),-7));
+  return[...set].sort().reverse();
+}
+function semanaDados(mk){
+  const fim=addDays(mk,6);
+  const emPeriodo=d=>d&&d>=mk&&d<=fim;
+  const fechadas=S.tarefas.filter(t=>t.feito&&emPeriodo(t.feitoEm));
+  const atas=M.atas.filter(a=>emPeriodo(a.data));
+  const topFechados=S.topicos.filter(t=>t.estado==='fechado'&&emPeriodo(t.fechadoEm));
+  const visitas=S.feiras.filter(f=>f.tipo==='visita'&&f.inicio<=fim&&f.fim>=mk);
+  const rfqs=[];S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if(emPeriodo(r.data))rfqs.push(Object.assign({},r,{cliente:c.nome}))}));
+  return{fechadas,atas,topFechados,visitas,rfqs};
+}
+function semReg(mk){S.semanal[mk]=S.semanal[mk]||{removidos:[],nota:''};return S.semanal[mk]}
+function marcoRemover(mk,id){semReg(mk).removidos.push(id);save();renderSemana()}
+function marcoEl(mk,id,tipo,data,texto){
+  const d=document.createElement('div');d.className='ln';
+  d.innerHTML='<span><span class="tp">'+tipo+'</span>'+(data?'<small>'+esc(data)+'</small> ':'')+esc(texto)+'</span>';
+  const x=document.createElement('button');x.className='x';x.textContent='×';x.title='Tirar do report, sem apagar o original';
+  x.onclick=()=>marcoRemover(mk,id);
+  d.appendChild(x);
+  return d;
+}
+function renderSemana(){
+  const disp=semanasDisponiveis();
+  if(!semMk)semMk=addDays(mondayOf(today()),-7);
+  const opts=[...new Set([...disp,semMk])].sort().reverse();
+  const sel=document.getElementById('semSel');
+  sel.innerHTML=opts.map(m=>'<option value="'+m+'"'+(m===semMk?' selected':'')+'>'+weekRangeLabel(m)+'</option>').join('');
+  document.getElementById('semC').textContent=weekRangeLabel(semMk);
+  const {fechadas,atas,topFechados,visitas,rfqs}=semanaDados(semMk);
+  const ganhas=rfqs.filter(r=>estadoRfq(r.estado)==='ganha');
+  const rfqValor=rfqs.reduce((s,r)=>s+(+r.valor||0),0);
+  const ganhoValor=ganhas.reduce((s,r)=>s+(+r.valor||0),0);
+  document.getElementById('semTop').innerHTML=
+    kpiEl(fechadas.length,'tarefas fechadas')+kpiEl(atas.length,'reuniões')+kpiEl(visitas.length,'visitas a clientes')+
+    kpiEl(rfqs.length,'RFQs recebidas, '+eur(rfqValor))+kpiEl(ganhas.length,'RFQs ganhas, '+eur(ganhoValor));
+
+  const porEstado=k=>rfqs.filter(r=>estadoRfq(r.estado)===k).length;
+  const grupos=[['Recebidas',rfqs.length,''],['Aguarda equipa',porEstado('aguarda_equipa'),''],
+    ['Aguarda cliente',porEstado('aguarda_cliente'),''],
+    ['Enviadas',porEstado('enviada')+porEstado('ganha')+porEstado('perdida'),''],['Ganhas',porEstado('ganha'),'g']];
+  const mx=Math.max(1,...grupos.map(g=>g[1]));
+  document.getElementById('semFunil').innerHTML=grupos.map(([l,v,c])=>
+    '<div class="fstep"><span class="lb">'+l+'</span><span class="tr"><span class="fi '+c+'" style="width:'+(v/mx*100)+'%"></span></span><span class="vv">'+v+'</span></div>').join('');
+
+  const rem=semReg(semMk).removidos;
+  const mb=document.getElementById('semMarcos');mb.innerHTML='';let nM=0;
+  topFechados.forEach(t=>{const id='t:'+t.id;if(rem.includes(id))return;nM++;
+    mb.appendChild(marcoEl(semMk,id,'Tópico fechado',t.fechadoEm,t.titulo+(t.nota?' — '+t.nota:'')))});
+  atas.forEach(a=>{const id='a:'+a.id;if(rem.includes(id))return;nM++;
+    mb.appendChild(marcoEl(semMk,id,'Reunião',a.data,a.titulo+(a.participantes?' ('+a.participantes+')':'')))});
+  visitas.forEach(f=>{const id='f:'+f.id;if(rem.includes(id))return;nM++;
+    mb.appendChild(marcoEl(semMk,id,'Visita',f.inicio,f.nome+(f.descricao?' — '+f.descricao:'')))});
+  document.getElementById('semMarcosC').textContent=nM;
+  if(!nM)mb.innerHTML='<p class="empty">Sem marcos automáticos nesta semana.</p>';
+
+  const rb=document.getElementById('semRfqs');rb.innerHTML='';
+  document.getElementById('semRfqC').textContent=rfqs.length;
+  if(!rfqs.length)rb.innerHTML='<p class="empty">Sem RFQs registadas nesta semana.</p>';
+  [...rfqs].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1).forEach(r=>{
+    const est=estadoRfq(r.estado);
+    const d=document.createElement('div');d.className='ln';
+    d.innerHTML='<span>'+esc(r.cliente)+', '+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small> '+
+      '<span class="depbadge" style="background:'+ESTADO_RFQ_COR[est]+'">'+ESTADO_RFQ[est]+'</span></span><b>'+eur(r.valor)+'</b>';
+    rb.appendChild(d);
+  });
+  document.getElementById('semNota').value=semReg(semMk).nota||'';
+}
+function semanaTexto(mk){
+  const {fechadas,atas,topFechados,visitas,rfqs}=semanaDados(mk);
+  const rem=semReg(mk).removidos;
+  const ganhas=rfqs.filter(r=>estadoRfq(r.estado)==='ganha');
+  let r='Report semanal, '+weekRangeLabel(mk)+'\n\n';
+  r+='MARCOS DA SEMANA\n';
+  const marcos=[];
+  topFechados.forEach(t=>{if(!rem.includes('t:'+t.id))marcos.push('- Tópico fechado: '+t.titulo+(t.nota?' — '+t.nota:''))});
+  atas.forEach(a=>{if(!rem.includes('a:'+a.id))marcos.push('- Reunião, '+a.data+': '+a.titulo+(a.participantes?' ('+a.participantes+')':''))});
+  visitas.forEach(f=>{if(!rem.includes('f:'+f.id))marcos.push('- Visita, '+f.inicio+': '+f.nome+(f.descricao?' — '+f.descricao:''))});
+  r+=(marcos.length?marcos.join('\n'):'- nenhum')+'\n\n';
+  r+='RFQs DA SEMANA ('+rfqs.length+', '+eur(rfqs.reduce((s,x)=>s+(+x.valor||0),0))+')\n';
+  r+=(rfqs.length?rfqs.map(x=>'- '+x.cliente+', '+x.descricao+', '+eur(x.valor)+', '+ESTADO_RFQ[estadoRfq(x.estado)]).join('\n'):'- nenhuma')+'\n\n';
+  r+='TAREFAS FECHADAS ('+fechadas.length+')\n'+(fechadas.length?fechadas.map(t=>'- '+t.texto).join('\n'):'- nenhuma')+'\n\n';
+  r+='RFQs GANHAS: '+ganhas.length+', '+eur(ganhas.reduce((s,x)=>s+(+x.valor||0),0))+'\n\n';
+  const nota=semReg(mk).nota;
+  if(nota)r+='NOTA\n'+nota+'\n';
+  return r;
+}
+function promptSemana(){
+  return 'És o assistente do José Ribeiro, diretor comercial da Bontaz Portugal. Vou apresentar este report semanal, de '+
+    weekRangeLabel(semMk)+', ao Benoit e à Mary.\n\nTransforma os dados em baixo num report semanal claro e profissional, '+
+    'em português europeu, pronto a apresentar. Frases completas onde fizer sentido, foco no que importa para gestão. '+
+    'Não inventes números que não estejam nos dados.\n\n'+semanaTexto(semMk);
+}
+function mostrarPromptSemana(){
+  const out=document.getElementById('semPromptOut');out.innerHTML='';
+  const ta=document.createElement('textarea');ta.className='mono';ta.style.minHeight='160px';ta.style.marginTop='10px';
+  ta.value=promptSemana();out.appendChild(ta);
+  const b=document.createElement('button');b.className='cta ghost';b.style.marginTop='8px';b.textContent='Copiar prompt';
+  b.onclick=()=>{ta.select();try{document.execCommand('copy');b.textContent='Copiado'}catch(e){b.textContent='Usa Ctrl+C'}};
+  out.appendChild(b);
+}
+function copiarTextoSemana(){
+  const ta=document.createElement('textarea');ta.style.position='fixed';ta.style.opacity='0';
+  ta.value=semanaTexto(semMk);document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');alert('Texto do report copiado.')}catch(e){alert('Não deu para copiar automaticamente.')}
+  ta.remove();
+}
 function arquivoMd(){
   const tf=fechadas(),pf=S.topicos.filter(t=>t.estado==='fechado');
   const meses=[...new Set([...tf.map(t=>(t.feitoEm||'').slice(0,7)),...pf.map(t=>(t.fechadoEm||'').slice(0,7))])].filter(Boolean).sort().reverse();
@@ -2411,8 +2581,8 @@ async function pedirPrioridade(){
 
 /* ---------- render geral e eventos ---------- */
 function renderAll(){renderBell();renderCal();renderSsi();renderDay();renderTasks();
-  renderArquivo();renderTopics();renderCRM();renderMoms();renderFeiras();renderMes();renderPainel();renderDados()}
-const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes'};
+  renderArquivo();renderTopics();renderCRM();renderMoms();renderFeiras();renderMes();renderPainel();renderDados();renderSemana()}
+const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes',semana:'v-semana'};
 function go(name){tab=name;
   document.getElementById('v-busca').classList.add('hidden');
   Object.entries(VIEWS).forEach(([k,v])=>{
@@ -2455,6 +2625,10 @@ document.getElementById('ssiBtn').onclick=registarSsi;
 document.getElementById('rollBtn').onclick=rollover;
 document.getElementById('expBtn').onclick=gerarRep;
 document.getElementById('promptMesBtn').onclick=mostrarPromptMes;
+document.getElementById('semSel').onchange=e=>{semMk=e.target.value;renderSemana()};
+document.getElementById('semNota').addEventListener('input',e=>{semReg(semMk).nota=e.target.value;save()});
+document.getElementById('semCopy').onclick=copiarTextoSemana;
+document.getElementById('semPromptBtn').onclick=mostrarPromptSemana;
 document.getElementById('mesSel').onchange=e=>{curMes=e.target.value;gerarRep();renderMes()};
 document.getElementById('arqSel').onchange=e=>{arqMes=e.target.value;renderArquivo()};
 document.getElementById('arqDl').onclick=()=>dl('arquivo-acoes-'+today()+'.md',arquivoMd());
@@ -2472,7 +2646,7 @@ function crmKpisMes(mes){
   const ganhas=doMes.filter(r=>estadoRfq(r.estado)==='ganha');
   const perdidas=doMes.filter(r=>estadoRfq(r.estado)==='perdida');
   const semResp=doMes.filter(r=>estadoRfq(r.estado)==='semresposta');
-  const abertas=[];S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if(['recebida','enviada'].includes(estadoRfq(r.estado)))abertas.push(r)}));
+  const abertas=[];S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if(RFQ_ABERTAS_ESTADOS.includes(estadoRfq(r.estado)))abertas.push(r)}));
   const soma=arr=>arr.reduce((s,r)=>s+(+r.valor||0),0);
   return{rfq:doMes.length,cotN:enviadas.length,cotV:soma(enviadas),gan:ganhas.length,ganV:soma(ganhas),
     per:perdidas.length,sr:semResp.length,bkN:abertas.length,bkV:soma(abertas)};
