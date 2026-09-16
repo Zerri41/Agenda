@@ -199,9 +199,13 @@
   .pagina-corpo[data-placeholder]:empty:before{content:attr(data-placeholder);color:var(--steel)}
   .attach-chip{display:inline-flex;align-items:center;gap:4px;background:#EEF1F6;border:1px solid var(--line);border-radius:3px;padding:2px 8px;font-size:12.5px;color:var(--navy);text-decoration:none;cursor:pointer}
   .attach-chip:hover{background:#E4E8F0}
-  .img-resize-tb{position:absolute;display:flex;gap:2px;background:var(--navy);border-radius:3px;padding:3px;z-index:30;box-shadow:0 3px 10px rgba(15,23,42,.25)}
-  .img-resize-tb button{border:0;background:transparent;color:#fff;font:inherit;font-size:12px;padding:3px 7px;cursor:pointer;border-radius:2px}
-  .img-resize-tb button:hover{background:rgba(255,255,255,.2)}
+  .img-resize-frame{position:absolute;border:1.5px dashed var(--navy);pointer-events:none;z-index:25}
+  .irh{position:absolute;background:var(--navy);border:2px solid #fff;pointer-events:auto;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .irh-corner{width:13px;height:13px;right:-7px;bottom:-7px;border-radius:50%;cursor:nwse-resize}
+  .irh-right{width:9px;height:18px;right:-6px;top:50%;margin-top:-9px;border-radius:3px;cursor:ew-resize}
+  .irh-bottom{width:18px;height:9px;bottom:-6px;left:50%;margin-left:-9px;border-radius:3px;cursor:ns-resize}
+  .irh-reset{position:absolute;top:-30px;right:-2px;pointer-events:auto;border:1px solid var(--line);background:var(--card);border-radius:3px;font-size:13px;padding:2px 7px;cursor:pointer;color:var(--navy)}
+  .irh-reset:hover{border-color:var(--navy)}
   a.mlink{color:var(--navy);font-weight:600;text-decoration:underline;cursor:pointer}
   .mentionbox{background:var(--card);border:1px solid var(--line);box-shadow:0 6px 18px rgba(15,23,42,.18);max-height:220px;overflow:auto;min-width:220px}
   .mentionbox .mi{padding:7px 11px;font-size:13px;cursor:pointer}
@@ -441,7 +445,8 @@
       <div class="panel">
         <h2><span data-en="Commercial dashboard">Painel comercial</span> <span class="c" id="pnMes"></span></h2>
         <div class="addrow" style="margin:0 0 14px">
-          <select id="pnSelMes" style="width:150px;flex:none"></select>
+          <select id="pnSelTipo" style="width:120px;flex:none"></select>
+          <select id="pnSelVal" style="width:150px;flex:none"></select>
           <select id="pnSelAno" style="width:110px;flex:none"></select>
         </div>
         <div class="kpis" id="pnTop"></div>
@@ -873,6 +878,11 @@ const DOW_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const DOM_PT={servicos:'Serviços',bicicletas:'Bicicletas',diversos:'Diversos e institucional'};
 const DOM_EN={servicos:'Services',bicicletas:'Bicycles',diversos:'Other and institutional'};
 const DIAS=[...DIAS_PT],MESN=[...MESN_PT],MS=[...MS_PT],DOW=[...DOW_PT],DOM={...DOM_PT};
+const PERTIPO_PT={mes:'Mês',trim:'Trimestre',sem:'Semestre',ano:'Ano'};
+const PERTIPO_EN={mes:'Month',trim:'Quarter',sem:'Semester',ano:'Year'};
+const TRIM_PT=['T1','T2','T3','T4'],TRIM_EN=['Q1','Q2','Q3','Q4'];
+const SEM_PT=['S1','S2'],SEM_EN=['H1','H2'];
+const PERTIPO={...PERTIPO_PT},TRIM=[...TRIM_PT],SEM=[...SEM_PT];
 const AREAS=[['aInd','Industrialização'],['aRd','I&D'],['aEns','Ensaios'],['aMet','Metrologia'],['aMec','Mecânica'],['aMold','Moldes']];
 const KF=['rfq','cotN','cotV','prazo','gan','ganV','per','sr','cli','cliN','rep','t3','reu','cont','bkN','bkV','aInd','aRd','aEns','aMet','aMec','aMold'];
 const PLANO={
@@ -898,7 +908,7 @@ const SEED_TAR=[
 let S={topicos:[],tarefas:[],dias:{},ssi:[],kpis:{},obj:{},feiras:[],crm:[],semanal:{},deptCores:{},notas:{cadernos:[],paginas:[]},rep:'',seeded:false}, M={atas:[]};
 const BACKUP=null;
 let viewDate=new Date(), calY=viewDate.getFullYear(), calM=viewDate.getMonth();
-let curMes='', arqMes='todos', pnMes='', kpMes='', momEdit=null, tab='dia', aberto={}, abertoF={};
+let curMes='', arqMes='todos', pnTipo='ano', pnAno=0, pnVal=1, kpMes='', momEdit=null, tab='dia', aberto={}, abertoF={};
 let LANG=localStorage.getItem('jose:lang')||'pt';
 function aplicarIdioma(){
   document.querySelectorAll('[data-en]').forEach(el=>{
@@ -918,6 +928,9 @@ function aplicarIdioma(){
   MESN.splice(0,MESN.length,...(LANG==='en'?MESN_EN:MESN_PT));
   MS.splice(0,MS.length,...(LANG==='en'?MS_EN:MS_PT));
   DOW.splice(0,DOW.length,...(LANG==='en'?DOW_EN:DOW_PT));
+  Object.assign(PERTIPO,LANG==='en'?PERTIPO_EN:PERTIPO_PT);
+  TRIM.splice(0,TRIM.length,...(LANG==='en'?TRIM_EN:TRIM_PT));
+  SEM.splice(0,SEM.length,...(LANG==='en'?SEM_EN:SEM_PT));
   const bp=document.getElementById('langPt'),be=document.getElementById('langEn');
   if(bp&&be){
     bp.style.background=LANG==='pt'?'var(--navy)':'var(--card)';bp.style.color=LANG==='pt'?'#fff':'var(--navy)';
@@ -1015,7 +1028,7 @@ async function abrirFH(){
     aplicarPack(JSON.parse(txt));
     document.getElementById('onboard').style.display='none';
     await escreverFH();
-    curMes=ym(new Date());pnMes=curMes;kpMes=curMes;
+    curMes=ym(new Date());pnAno=+curMes.slice(0,4);pnVal=+curMes.slice(5,7);kpMes=curMes;
     renderAll();
     if(S.rep)document.getElementById('rep').value=S.rep;
   }catch(e){if(e&&e.name!=='AbortError')alert('Não consegui abrir: '+e.message)}
@@ -1100,7 +1113,7 @@ async function sincronizar(silencioso){
   const m=await jget(K_MOM);
   try{aplicarPack({core:c,moms:m||{atas:[]}})}catch(e){alert('Não consegui ler o que está gravado: '+e.message);return}
   baseMtime=c.mtime||'';conflito=false;barraSync(null);
-  curMes=ym(new Date());pnMes=curMes;kpMes=curMes;
+  curMes=ym(new Date());pnAno=+curMes.slice(0,4);pnVal=+curMes.slice(5,7);kpMes=curMes;
   renderAll();
   if(S.rep)document.getElementById('rep').value=S.rep;
   if(!silencioso)alert('Atualizado.');
@@ -1206,7 +1219,7 @@ async function nuvTrazer(silencioso){
     aplicarPack(rem.dados.core?rem.dados:{core:rem.dados,moms:{atas:[]}});
     baseMtime=rem.mtime||'';nuvMtime=rem.mtime||'';nuvBase=rem.mtime||'';conflito=false;barraSync(null);
     await stSet(K_CORE,JSON.stringify(S));await stSet(K_MOM,JSON.stringify(M));
-    curMes=ym(new Date());pnMes=curMes;kpMes=curMes;
+    curMes=ym(new Date());pnAno=+curMes.slice(0,4);pnVal=+curMes.slice(5,7);kpMes=curMes;
     renderAll();if(S.rep)document.getElementById('rep').value=S.rep;
     nuvMarcar('ok');
     if(!silencioso)alert('Trazido da nuvem.');
@@ -1306,7 +1319,7 @@ function importar(file){const r=new FileReader();
   r.onload=()=>{try{const p=JSON.parse(r.result);
     if(!confirm('Isto substitui tudo pelos dados da cópia de '+(p&&p.gerado||'').slice(0,10)+'. Continuar?'))return;
     aplicarPack(p);flush();
-    curMes=ym(new Date());pnMes=curMes;kpMes=curMes;renderAll();
+    curMes=ym(new Date());pnAno=+curMes.slice(0,4);pnVal=+curMes.slice(5,7);kpMes=curMes;renderAll();
     if(S.rep)document.getElementById('rep').value=S.rep;
     alert('Cópia importada.')}catch(e){alert('Não consegui ler: '+e.message)}};
   r.readAsText(file)}
@@ -1652,7 +1665,7 @@ function rowEl(t,compact){
 
 /* ---------- atas ---------- */
 function momEl(a){
-  const d=document.createElement('div');d.className='mom';
+  const d=document.createElement('div');d.className='mom';d.dataset.id=a.id;
   d.innerHTML='<div class="mh"><b>'+esc(a.titulo)+'</b>'+
     (a.topicoId?'<span class="tag '+a.dominio+'">'+esc(topNome(a.topicoId))+'</span>':'<span class="tag '+a.dominio+'">'+DOM[a.dominio]+'</span>')+
     '<span class="st">'+esc(a.data)+'</span></div>'+
@@ -1779,10 +1792,17 @@ const ESTADO_RFQ_COR={recebida:'#E4E8F0',aguarda_equipa:'#EAE1F5',aguarda_client
 const ESTADOS_COM_JUSTIFICACAO=['perdida','recusada'];
 const RFQ_ABERTAS_ESTADOS=['recebida','aguarda_equipa','aguarda_cliente','enviada'];
 function estadoRfq(v){v=(v||'').toLowerCase().trim();
-  if(v.startsWith('env'))return'enviada';if(v.startsWith('gan'))return'ganha';if(v.startsWith('perd'))return'perdida';
-  if(v.startsWith('recus'))return'recusada';
-  if(v.startsWith('sem'))return'semresposta';
-  if(v.includes('equipa'))return'aguarda_equipa';if(v.includes('cliente'))return'aguarda_cliente';
+  if(!v)return'recebida';
+  for(const k of Object.keys(ESTADO_RFQ_PT)){
+    if(ESTADO_RFQ_PT[k].toLowerCase()===v||ESTADO_RFQ_EN[k].toLowerCase()===v)return k;
+  }
+  if(v.startsWith('env')||v.startsWith('quote'))return'enviada';
+  if(v.startsWith('gan')||v.startsWith('won'))return'ganha';
+  if(v.startsWith('perd')||v.startsWith('lost'))return'perdida';
+  if(v.startsWith('recus')||v.startsWith('declin'))return'recusada';
+  if(v.startsWith('sem')||v.startsWith('no '))return'semresposta';
+  if(v.includes('equipa')||v.includes('team'))return'aguarda_equipa';
+  if(v.includes('cliente')||v.includes('client'))return'aguarda_cliente';
   return'recebida'}
 function crmLista(){
   return S.crm.filter(c=>crmFiltro==='todos'||c.dominio===crmFiltro);
@@ -2061,16 +2081,86 @@ function kpiEl(v,lab,extra,alert){
   return '<div class="kpi'+(alert?' alert':'')+'"><b>'+v+'</b><small>'+lab+'</small>'+
     (extra?'<span class="dl '+(extra.d>0?'up':extra.d<0?'dn':'')+'">'+extra.t+'</span>':'')+'</div>';
 }
+function mesesDoPeriodo(tipo,ano,val){
+  if(tipo==='mes')return[ano+'-'+p2(val)];
+  if(tipo==='trim'){const ini=(val-1)*3+1;return[0,1,2].map(i=>ano+'-'+p2(ini+i))}
+  if(tipo==='sem'){const ini=(val-1)*6+1;return Array.from({length:6},(_,i)=>ano+'-'+p2(ini+i))}
+  return Array.from({length:12},(_,i)=>ano+'-'+p2(i+1));
+}
+function periodoLabel(tipo,ano,val){
+  if(tipo==='mes')return MESN[val-1]+' '+ano;
+  if(tipo==='trim')return TRIM[val-1]+' '+ano;
+  if(tipo==='sem')return SEM[val-1]+' '+ano;
+  return ''+ano;
+}
+function periodoAnterior(tipo,ano,val){
+  if(tipo==='ano')return[ano-1,val];
+  const max=tipo==='mes'?12:tipo==='trim'?4:2;
+  return val<=1?[ano-1,max]:[ano,val-1];
+}
+function valPadraoPeriodo(tipo){
+  const m=new Date().getMonth()+1;
+  if(tipo==='mes')return m;
+  if(tipo==='trim')return Math.ceil(m/3);
+  if(tipo==='sem')return Math.ceil(m/6);
+  return 1;
+}
+const KF_SOMA=['rfq','cotN','cotV','gan','ganV','per','sr','cliN','rep','t3','reu','cont','aInd','aRd','aEns','aMet','aMec','aMold'];
+const KF_MEDIA=['prazo','cli'];
+const KF_FIM=['bkN','bkV'];
+function Kperiodo(meses){
+  if(meses.length===1)return K(meses[0]);
+  const ks=meses.map(K);
+  const out={};
+  KF_SOMA.forEach(f=>out[f]=ks.reduce((s,k)=>s+(+k[f]||0),0));
+  KF_MEDIA.forEach(f=>{
+    const vals=ks.filter(k=>k[f]!==undefined&&k[f]!=='').map(k=>+k[f]);
+    out[f]=vals.length?n1(vals.reduce((s,v)=>s+v,0)/vals.length):0;
+  });
+  KF_FIM.forEach(f=>{
+    let v=0;for(let i=ks.length-1;i>=0;i--){if(ks[i][f]!==undefined){v=ks[i][f];break}}
+    out[f]=v;
+  });
+  return out;
+}
+function execPeriodo(meses){
+  if(meses.length===1)return execMes(meses[0]);
+  const f=fechadas().filter(t=>t.feitoEm&&meses.includes(t.feitoEm.slice(0,7)));
+  const noPrazo=f.filter(t=>t.feitoEm<=t.prazo).length;
+  const dias=Object.entries(S.dias).filter(([k])=>meses.includes(k.slice(0,7)));
+  const uteis=dias.filter(([k])=>{const d=new Date(k+'T00:00');return d.getDay()>0&&d.getDay()<6});
+  const completos=uteis.filter(([,v])=>v.rit.every(Boolean)).length;
+  const insights=uteis.filter(([,v])=>v.rit[2]).length;
+  return {fechadas:f.length,noPrazo,cumpr:pct(noPrazo,f.length),ritual:completos,insights,
+    atas:M.atas.filter(a=>a.data&&meses.includes(a.data.slice(0,7))).length,
+    notas:pct(f.filter(t=>t.nota).length,f.length)};
+}
 function renderPainel(){
-  if(!pnMes)pnMes=ym(new Date());
-  popularMesAno(document.getElementById('pnSelMes'),document.getElementById('pnSelAno'),pnMes);
-  document.getElementById('pnMes').textContent=ymLabel(pnMes);
-  const k=K(pnMes),kp=K(prevYm(pnMes)),o=S.obj||{};
+  if(!pnAno)pnAno=new Date().getFullYear();
+  const selTipo=document.getElementById('pnSelTipo'),selVal=document.getElementById('pnSelVal'),selAno=document.getElementById('pnSelAno');
+  selTipo.innerHTML=['ano','trim','sem','mes'].map(t=>'<option value="'+t+'">'+PERTIPO[t]+'</option>').join('');
+  selTipo.value=pnTipo;
+  selAno.innerHTML=anosDisponiveis().map(a=>'<option value="'+a+'">'+a+'</option>').join('');
+  selAno.value=pnAno;
+  const nOpcoes=pnTipo==='mes'?12:pnTipo==='trim'?4:pnTipo==='sem'?2:0;
+  selVal.style.display=nOpcoes?'':'none';
+  if(nOpcoes){
+    const labs=pnTipo==='mes'?MESN:pnTipo==='trim'?TRIM:SEM;
+    selVal.innerHTML=labs.slice(0,nOpcoes).map((l,i)=>'<option value="'+(i+1)+'">'+l+'</option>').join('');
+    pnVal=Math.min(Math.max(pnVal,1),nOpcoes);
+    selVal.value=pnVal;
+  }
+  const meses=mesesDoPeriodo(pnTipo,pnAno,pnVal);
+  const[anoAnt,valAnt]=periodoAnterior(pnTipo,pnAno,pnVal);
+  const mesesAnt=mesesDoPeriodo(pnTipo,anoAnt,valAnt);
+  document.getElementById('pnMes').textContent=periodoLabel(pnTipo,pnAno,pnVal);
+  const k=Kperiodo(meses),kp=Kperiodo(mesesAnt),o=S.obj||{};
   const dec=(+k.gan||0)+(+k.per||0);
   const conv=pct(+k.gan||0,dec), convP=pct(+kp.gan||0,(+kp.gan||0)+(+kp.per||0));
   const dV=(+k.ganV||0)-(+kp.ganV||0);
+  const lblAnt=LANG==='en'?'previous '+PERTIPO[pnTipo].toLowerCase():PERTIPO[pnTipo].toLowerCase()+' anterior';
   document.getElementById('pnTop').innerHTML=
-    kpiEl(eur(+k.ganV||0),'adjudicado no mês',{d:dV,t:(dV>=0?'+':'')+eur(dV)+' vs mês anterior'})+
+    kpiEl(eur(+k.ganV||0),'adjudicado no período',{d:dV,t:(dV>=0?'+':'')+eur(dV)+' vs '+lblAnt})+
     kpiEl(conv+'%','conversão'+(o.conv?', meta '+o.conv+'%':''),{d:conv-convP,t:(conv-convP>=0?'+':'')+(conv-convP)+' pontos'},o.conv&&conv<o.conv)+
     kpiEl((+k.rfq||0),'RFQ recebidos')+
     kpiEl((+k.prazo||0)+' d','prazo de resposta'+(o.prazo?', meta '+o.prazo+' d':''),null,o.prazo&&(+k.prazo||0)>o.prazo);
@@ -2085,19 +2175,20 @@ function renderPainel(){
     return '<div class="bl"><div class="lab"><span>'+n+'</span><b>'+eur(v)+', '+pct(v,tot)+'%</b></div>'+
       '<div class="track"><div class="fill" style="width:'+(v/tot*100)+'%"></div></div></div>'}).join('');
 
-  const serie=[];for(let i=7;i>=0;i--)serie.push(shiftMonth(pnMes+'-01',-i).slice(0,7));
+  const mesFim=meses[meses.length-1];
+  const serie=[];for(let i=7;i>=0;i--)serie.push(shiftMonth(mesFim+'-01',-i).slice(0,7));
   const maxV=Math.max(1,...serie.map(m=>+K(m).ganV||0));
   document.getElementById('pnEvo').innerHTML=serie.map(m=>{
     const v=+K(m).ganV||0;
     return '<div class="col"><span class="vl">'+(v?Math.round(v/1000)+'k':'')+'</span><span class="bb" style="height:'+(v/maxV*100)+'%"></span></div>'}).join('');
   document.getElementById('pnEvoL').innerHTML=serie.map(m=>'<span>'+MS[+m.slice(5,7)-1]+'</span>').join('');
-  let anoV=0;for(let mm=1;mm<=12;mm++)anoV+=+K(pnMes.slice(0,4)+'-'+p2(mm)).ganV||0;
+  let anoV=0;for(let mm=1;mm<=12;mm++)anoV+=+K(pnAno+'-'+p2(mm)).ganV||0;
   document.getElementById('pnEvoT').textContent=o.ano
     ? 'Adjudicado no ano: '+eur(anoV)+' de '+eur(o.ano)+', '+pct(anoV,o.ano)+' por cento do objetivo. Em carteira: '+eur(+k.bkV||0)+'.'
     : 'Adjudicado no ano: '+eur(anoV)+'. Define o objetivo anual no separador Dados para veres a cobertura.';
 
-  const ex=execMes(pnMes);
-  document.getElementById('pnExecM').textContent=ymLabel(pnMes);
+  const ex=execPeriodo(meses);
+  document.getElementById('pnExecM').textContent=periodoLabel(pnTipo,pnAno,pnVal);
   document.getElementById('pnExec').innerHTML=
     kpiEl(ex.fechadas,'tarefas fechadas')+
     kpiEl(ex.cumpr+'%','fechadas dentro do prazo',null,ex.fechadas&&ex.cumpr<70)+
@@ -2681,14 +2772,22 @@ function todosOsTitulos(){
     const c=S.notas.cadernos.find(x=>x.id===p.cadernoId);
     out.push({tipo:'pagina',id:p.id,titulo:p.titulo,caderno:c?c.nome:''});
   });
+  M.atas.forEach(a=>out.push({tipo:'ata',id:a.id,titulo:a.titulo,caderno:a.data}));
   return out;
 }
 function linkify(safeHtml){
   if(!safeHtml)return safeHtml;
-  return safeHtml.replace(/\[\[(caderno|pagina):([\w-]+)\|([^\]]*)\]\]/g,
+  return safeHtml.replace(/\[\[(caderno|pagina|ata):([\w-]+)\|([^\]]*)\]\]/g,
     (m,tipo,id,tit)=>'<a href="#" class="mlink" data-tipo="'+tipo+'" data-id="'+id+'">'+tit+'</a>');
 }
 function irParaLigacao(tipo,id){
+  if(tipo==='ata'){
+    const a=M.atas.find(x=>x.id===id);
+    if(!a){alert('Essa ata já não existe.');return}
+    go('atas');renderAll();
+    setTimeout(()=>{const el=document.querySelector('#momList .mom[data-id="'+id+'"]');if(el)el.scrollIntoView({block:'center'})},30);
+    return;
+  }
   go('notas');
   if(tipo==='caderno'){notaCaderno=id;renderNotas();return}
   const p=S.notas.paginas.find(x=>x.id===id);
@@ -2733,7 +2832,7 @@ function attachMention(el){
       box.appendChild(it);
     } else lista.forEach((x,i)=>{
       const it=document.createElement('div');it.className='mi';
-      it.textContent=(x.tipo==='caderno'?'📔 ':'📄 ')+x.titulo+(x.caderno?' ('+x.caderno+')':'');
+      it.textContent=(x.tipo==='caderno'?'📔 ':x.tipo==='ata'?'📝 ':'📄 ')+x.titulo+(x.caderno?' ('+x.caderno+')':'');
       it.onmousedown=ev=>{ev.preventDefault();escolher(x)};
       it.onmouseenter=()=>{idx=i;marcar()};
       box.appendChild(it);itens.push(it);
@@ -2836,28 +2935,70 @@ function criarCorpoRico(valorInicial,aoGravar,placeholder){
   return{corpo:ce,fileInput:fi};
 }
 function attachImgResize(ce,gravar){
-  let handle=null,active=null;
-  const remover=()=>{if(handle){handle.remove();handle=null}active=null};
-  const posicionar=img=>{
-    const r=img.getBoundingClientRect(),rp=ce.parentNode.getBoundingClientRect();
-    handle.style.left=(r.right-rp.left-70)+'px';
-    handle.style.top=(r.top-rp.top-32)+'px';
+  let frame=null,active=null;
+  const remover=()=>{if(frame){frame.remove();frame=null}active=null};
+  const posicionar=()=>{
+    if(!active||!frame)return;
+    const r=active.getBoundingClientRect(),rp=ce.parentNode.getBoundingClientRect();
+    frame.style.left=(r.left-rp.left)+'px';frame.style.top=(r.top-rp.top)+'px';
+    frame.style.width=r.width+'px';frame.style.height=r.height+'px';
   };
+  function arrastar(handle,modo){
+    const comecar=ev=>{
+      ev.preventDefault();
+      const p0=ev.touches?ev.touches[0]:ev;
+      const startX=p0.clientX,startY=p0.clientY;
+      const r0=active.getBoundingClientRect();
+      const startW=r0.width,startH=r0.height;
+      const razao=startW/(startH||1);
+      if(modo==='right')active.style.height=Math.round(startH)+'px';
+      if(modo==='bottom')active.style.width=Math.round(startW)+'px';
+      function mover(mv){
+        const p=mv.touches?mv.touches[0]:mv;
+        const dx=p.clientX-startX,dy=p.clientY-startY;
+        if(modo==='corner'){
+          const novaW=Math.max(30,Math.round(startW+dx));
+          active.style.width=novaW+'px';active.style.height=Math.round(novaW/razao)+'px';
+        } else if(modo==='right'){
+          active.style.width=Math.max(30,Math.round(startW+dx))+'px';
+        } else if(modo==='bottom'){
+          active.style.height=Math.max(30,Math.round(startH+dy))+'px';
+        }
+        posicionar();
+      }
+      function soltar(){
+        document.removeEventListener('mousemove',mover);document.removeEventListener('mouseup',soltar);
+        document.removeEventListener('touchmove',mover);document.removeEventListener('touchend',soltar);
+        gravar();
+      }
+      document.addEventListener('mousemove',mover);document.addEventListener('mouseup',soltar);
+      document.addEventListener('touchmove',mover,{passive:false});document.addEventListener('touchend',soltar);
+    };
+    handle.addEventListener('mousedown',comecar);
+    handle.addEventListener('touchstart',comecar,{passive:false});
+  }
+  function selecionar(img){
+    active=img;
+    if(frame)frame.remove();
+    frame=document.createElement('div');frame.className='img-resize-frame';
+    const corner=document.createElement('div');corner.className='irh irh-corner';
+    const right=document.createElement('div');right.className='irh irh-right';
+    const bottom=document.createElement('div');bottom.className='irh irh-bottom';
+    const reset=document.createElement('button');reset.type='button';reset.className='irh-reset';reset.textContent='↺';reset.title='Tamanho original';
+    reset.onmousedown=ev=>ev.preventDefault();
+    reset.onclick=()=>{active.style.width='';active.style.height='';remover();gravar()};
+    frame.append(corner,right,bottom,reset);
+    if(getComputedStyle(ce.parentNode).position==='static')ce.parentNode.style.position='relative';
+    ce.parentNode.appendChild(frame);
+    posicionar();
+    arrastar(corner,'corner');arrastar(right,'right');arrastar(bottom,'bottom');
+  }
   ce.addEventListener('click',e=>{
     if(e.target.tagName!=='IMG'){remover();return}
-    active=e.target;
-    if(handle)handle.remove();
-    handle=document.createElement('div');handle.className='img-resize-tb';
-    const mk=(txt,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=txt;b.onmousedown=ev=>ev.preventDefault();b.onclick=fn;handle.appendChild(b)};
-    mk('−',()=>{const w=active.getBoundingClientRect().width;active.style.width=Math.max(40,Math.round(w/1.2))+'px';active.removeAttribute('height');posicionar(active);gravar()});
-    mk('Original',()=>{active.style.width='';active.removeAttribute('height');remover();gravar()});
-    mk('+',()=>{const w=active.getBoundingClientRect().width;active.style.width=Math.min(760,Math.round(w*1.2))+'px';active.removeAttribute('height');posicionar(active);gravar()});
-    if(getComputedStyle(ce.parentNode).position==='static')ce.parentNode.style.position='relative';
-    ce.parentNode.appendChild(handle);
-    posicionar(active);
+    selecionar(e.target);
   });
   document.addEventListener('click',e=>{
-    if(active&&e.target!==active&&!(handle&&handle.contains(e.target)))remover();
+    if(active&&e.target!==active&&!(frame&&frame.contains(e.target)))remover();
   });
 }
 function attachMentionCE(el){
@@ -2899,7 +3040,7 @@ function attachMentionCE(el){
       box.appendChild(it);
     } else lista.forEach((x,i)=>{
       const it=document.createElement('div');it.className='mi';
-      it.textContent=(x.tipo==='caderno'?'📔 ':'📄 ')+x.titulo+(x.caderno?' ('+x.caderno+')':'');
+      it.textContent=(x.tipo==='caderno'?'📔 ':x.tipo==='ata'?'📝 ':'📄 ')+x.titulo+(x.caderno?' ('+x.caderno+')':'');
       it.onmousedown=ev=>{ev.preventDefault();escolher(x)};
       it.onmouseenter=()=>{idx=i;marcar()};
       box.appendChild(it);itens.push(it);
@@ -3136,8 +3277,9 @@ document.getElementById('langEn').onclick=()=>mudarIdioma('en');
 document.getElementById('mesSel').onchange=e=>{curMes=e.target.value;gerarRep();renderMes()};
 document.getElementById('arqSel').onchange=e=>{arqMes=e.target.value;renderArquivo()};
 document.getElementById('arqDl').onclick=()=>dl('arquivo-acoes-'+today()+'.md',arquivoMd());
-document.getElementById('pnSelMes').onchange=()=>{pnMes=lerMesAno(document.getElementById('pnSelMes'),document.getElementById('pnSelAno'));renderPainel()};
-document.getElementById('pnSelAno').onchange=()=>{pnMes=lerMesAno(document.getElementById('pnSelMes'),document.getElementById('pnSelAno'));renderPainel()};
+document.getElementById('pnSelTipo').onchange=e=>{pnTipo=e.target.value;pnVal=valPadraoPeriodo(pnTipo);renderPainel()};
+document.getElementById('pnSelVal').onchange=e=>{pnVal=+e.target.value;renderPainel()};
+document.getElementById('pnSelAno').onchange=e=>{pnAno=+e.target.value;renderPainel()};
 document.getElementById('kpSelMes').onchange=()=>{kpMes=lerMesAno(document.getElementById('kpSelMes'),document.getElementById('kpSelAno'));renderDados()};
 document.getElementById('kpSelAno').onchange=()=>{kpMes=lerMesAno(document.getElementById('kpSelMes'),document.getElementById('kpSelAno'));renderDados()};
 document.getElementById('kpSave').onclick=guardarKpi;
@@ -3208,7 +3350,7 @@ document.getElementById('nvOff').onclick=()=>{
   NUV={url:'',token:'',pass:''};cfgGravar();nuvConfigUI();nuvMarcar('off')};
 
 (async()=>{
-  await load();curMes=ym(new Date());pnMes=curMes;kpMes=curMes;
+  await load();curMes=ym(new Date());pnAno=+curMes.slice(0,4);pnVal=+curMes.slice(5,7);kpMes=curMes;
   aplicarIdioma();renderAll();nuvConfigUI();nuvMarcar(nuvAtiva()?'sinc':'off');
   if(S.rep)document.getElementById('rep').value=S.rep;
   await nuvArranque();
