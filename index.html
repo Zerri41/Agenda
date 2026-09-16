@@ -605,7 +605,7 @@
     <section id="v-crm" class="hidden">
       <div class="panel">
         <h2>CRM <span class="c" id="crmC"></span></h2>
-        <p class="hint" data-en="Clients independent from topics and tasks — link them only if you want to. Contacts, last contact, RFQs line by line and total value. For working the pipeline and presenting to Benoit and Marilyne.">Clientes independentes dos tópicos e tarefas — liga-os só se quiseres. Contactos, último contacto, RFQs linha a linha e valor total. Serve para trabalhar a carteira e para apresentar ao Benoit e à Marilyne.</p>
+        <p class="hint" data-en="Clients independent from topics and tasks — link them only if you want to. Contacts, last contact, RFQs line by line and total value. For working the pipeline and presenting it to your management.">Clientes independentes dos tópicos e tarefas — liga-os só se quiseres. Contactos, último contacto, RFQs linha a linha e valor total. Serve para trabalhar a carteira e para apresentar à tua gestão.</p>
         <div class="addrow" id="crmFiltros" style="margin:0 0 14px">
           <button class="cta ghost" data-crmf="todos" data-en="All">Todos</button>
           <button class="cta ghost" data-crmf="servicos" data-en="Services">Serviços</button>
@@ -769,7 +769,7 @@
       </div>
       <div class="panel">
         <h2 data-en="Monthly report and note">Relatório e nota mensal</h2>
-        <p class="hint" data-en="This always stays here, it's your record of the month. You don't need to export anything — when you want to present to Benoit and Mary, generate the prompt below instead and paste it into a separate conversation with Claude, which hands you back the report already written and ready to present.">Isto fica sempre aqui, é o teu registo do mês. Não precisas de exportar nada — quando quiseres apresentar a Benoit e à Mary, gera antes o prompt em baixo e cola numa conversa à parte com o Claude, que te devolve o relatório já escrito e pronto a apresentar.</p>
+        <p class="hint" data-en="This always stays here, it's your record of the month. You don't need to export anything — when you want to present it, generate the prompt below instead and paste it into a separate conversation with Claude, which hands you back the report already written and ready to present.">Isto fica sempre aqui, é o teu registo do mês. Não precisas de exportar nada — quando quiseres apresentar, gera antes o prompt em baixo e cola numa conversa à parte com o Claude, que te devolve o relatório já escrito e pronto a apresentar.</p>
         <textarea id="rep" class="mono" style="min-height:340px"></textarea>
         <div class="btnrow">
           <button class="cta ghost" id="copyBtn" data-en="Copy">Copiar</button>
@@ -810,7 +810,7 @@
     <section id="v-semana" class="hidden">
       <div class="panel">
         <h2><span data-en="Weekly report">Report semanal</span> <span class="c" id="semC"></span></h2>
-        <p class="hint" data-en="Designed to present last week to Benoit and Mary. Milestones and RFQs come in on their own from the other tabs — use the × to remove something from here without deleting the original record.">Pensado para apresentar a semana anterior ao Benoit e à Mary. Os marcos e as RFQs vêm sozinhos das outras abas — usa o × para tirar algo daqui sem apagar o registo original.</p>
+        <p class="hint" data-en="Designed to present last week to your management. Milestones and RFQs come in on their own from the other tabs — use the × to remove something from here without deleting the original record.">Pensado para apresentar a semana anterior à tua gestão. Os marcos e as RFQs vêm sozinhos das outras abas — usa o × para tirar algo daqui sem apagar o registo original.</p>
         <div class="addrow" style="margin:0 0 14px"><select id="semSel" style="width:260px;flex:none"></select></div>
         <div class="kpis" id="semTop"></div>
       </div>
@@ -977,7 +977,7 @@ function aplicarPack(p){
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
     if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
-    c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado)})});
+    c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado);if(r.justificacao===undefined)r.justificacao=''})});
   M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId=''});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   S.seeded=true;
@@ -1292,7 +1292,7 @@ async function load(){
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
     if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
-    c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado)})});
+    c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado);if(r.justificacao===undefined)r.justificacao=''})});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   let m=await jget(K_MOM);if(!m)m=await jget(K_OLDM);
   if(m)M=m;M.atas=M.atas||[];
@@ -1770,15 +1770,17 @@ function corDeptIndex(nome){
 const crmDeptBg=nome=>'hsl('+HUES_DEPT[corDeptIndex(nome)]+',58%,87%)';
 const crmDeptFg=nome=>'hsl('+HUES_DEPT[corDeptIndex(nome)]+',65%,25%)';
 const ESTADO_RFQ_PT={recebida:'Recebida',aguarda_equipa:'Aguarda análise da equipa',aguarda_cliente:'Aguarda info do cliente',
-  enviada:'Cotação enviada',ganha:'Ganha',perdida:'Perdida',semresposta:'Sem resposta'};
+  enviada:'Cotação enviada',ganha:'Ganha',perdida:'Perdida',recusada:'Recusada',semresposta:'Sem resposta'};
 const ESTADO_RFQ_EN={recebida:'Received',aguarda_equipa:'Awaiting team review',aguarda_cliente:'Awaiting client info',
-  enviada:'Quote sent',ganha:'Won',perdida:'Lost',semresposta:'No response'};
+  enviada:'Quote sent',ganha:'Won',perdida:'Lost',recusada:'Declined',semresposta:'No response'};
 const ESTADO_RFQ={...ESTADO_RFQ_PT};
 const ESTADO_RFQ_COR={recebida:'#E4E8F0',aguarda_equipa:'#EAE1F5',aguarda_cliente:'#FCE9D6',enviada:'#DCE4F5',
-  ganha:'#DCEDE6',perdida:'#FBE0DB',semresposta:'#F3E7CE'};
+  ganha:'#DCEDE6',perdida:'#FBE0DB',recusada:'#EAD9C7',semresposta:'#F3E7CE'};
+const ESTADOS_COM_JUSTIFICACAO=['perdida','recusada'];
 const RFQ_ABERTAS_ESTADOS=['recebida','aguarda_equipa','aguarda_cliente','enviada'];
 function estadoRfq(v){v=(v||'').toLowerCase().trim();
   if(v.startsWith('env'))return'enviada';if(v.startsWith('gan'))return'ganha';if(v.startsWith('perd'))return'perdida';
+  if(v.startsWith('recus'))return'recusada';
   if(v.startsWith('sem'))return'semresposta';
   if(v.includes('equipa'))return'aguarda_equipa';if(v.includes('cliente'))return'aguarda_cliente';
   return'recebida'}
@@ -1818,8 +1820,18 @@ function crmCardEl(c){
     [...c.rfqs].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1).forEach(r=>{
       const est=estadoRfq(r.estado);
       const l=document.createElement('div');l.className='ln';
-      l.innerHTML='<span>'+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small> '+
-        '<span class="depbadge" style="background:'+ESTADO_RFQ_COR[est]+'">'+ESTADO_RFQ[est]+'</span></span><b>'+eur(r.valor)+'</b>';
+      const span=document.createElement('span');
+      span.innerHTML=esc(r.descricao)+' <small>'+esc(r.data||'')+'</small> '+
+        '<span class="depbadge" style="background:'+ESTADO_RFQ_COR[est]+'">'+ESTADO_RFQ[est]+'</span>';
+      if(ESTADOS_COM_JUSTIFICACAO.includes(est)){
+        const jb=document.createElement('button');jb.className='x';
+        jb.style.cssText='font-size:11px;border:1px solid '+(r.justificacao?'var(--line)':'var(--warn)')+';border-radius:9px;padding:1px 8px;margin-left:6px;color:'+(r.justificacao?'var(--navy)':'var(--warn)');
+        jb.textContent=r.justificacao?'justificação':'falta justificação';
+        jb.onclick=ev=>{ev.stopPropagation();abrirJustificacaoRfq(c,r)};
+        span.appendChild(jb);
+      }
+      const val=document.createElement('b');val.textContent=eur(r.valor);
+      l.append(span,val);
       rb.appendChild(l);
     });
     d.appendChild(rb);
@@ -1893,6 +1905,19 @@ function crmRefreshLinked(c,host){
     box.appendChild(chip);
   });
 }
+function abrirJustificacaoRfq(c,r){
+  const host=document.getElementById('crmEditorHost');
+  const est=estadoRfq(r.estado);
+  host.innerHTML='<h2>Justificação — '+esc(c.nome)+', '+esc(r.descricao)+'</h2>'+
+    '<p class="hint">'+(est==='recusada'?'Porque recusámos esta RFQ.':'Porque perdemos esta RFQ.')+' Escreve à vontade, cola uma imagem do email com Ctrl+V, ou anexa um ficheiro.</p>';
+  const{corpo:ce,fileInput:fi}=criarCorpoRico(r.justificacao,html=>{r.justificacao=html;save()},'Escreve aqui a justificação...');
+  host.appendChild(ce);host.appendChild(fi);
+  const btns=document.createElement('div');btns.className='btnrow';
+  const fechar=document.createElement('button');fechar.className='cta ghost';fechar.textContent='Fechar';
+  fechar.onclick=()=>{host.innerHTML='';renderCRM()};
+  btns.appendChild(fechar);host.appendChild(btns);
+  host.scrollIntoView({block:'center'});
+}
 function crmEdit(c){
   const host=document.getElementById('crmEditorHost');
   host.innerHTML='<h2>Editar CRM, '+esc(c.nome)+'</h2>'+
@@ -1906,7 +1931,7 @@ function crmEdit(c){
     Object.entries(CANAL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
     '<div><label class="f">Data</label><input type="date" id="crmData"></div>'+
     '<div><label class="f">Assunto, para procurar depois</label><input type="text" id="crmAssunto"></div></div>'+
-    '<div style="margin-top:10px"><label class="f">RFQs, uma por linha. Formato: descrição | valor | data aaaa-mm-dd | estado (recebida, aguarda equipa, aguarda cliente, enviada, ganha, perdida, sem resposta)</label>'+
+    '<div style="margin-top:10px"><label class="f">RFQs, uma por linha. Formato: descrição | valor | data aaaa-mm-dd | estado (recebida, aguarda equipa, aguarda cliente, enviada, ganha, perdida, recusada, sem resposta). Perdida e recusada pedem justificação — usa o botão no cartão depois de gravar.</label>'+
     '<textarea id="crmRfqs" class="mono" style="min-height:70px" placeholder="Cotação linha travagem M2300 | 250000 | 2026-09-10 | aguarda equipa"></textarea></div>'+
     '<div style="margin-top:10px"><label class="f">Ligar a um tópico existente, opcional</label>'+
     '<div class="addrow"><select id="crmTopSel"></select><button class="cta ghost" id="crmTopAdd">Ligar</button></div>'+
@@ -1940,10 +1965,16 @@ function crmEdit(c){
     });
     c.ultimoContacto={canal:host.querySelector('#crmCanal').value,data:host.querySelector('#crmData').value,
       assunto:host.querySelector('#crmAssunto').value.trim()};
-    c.rfqs=host.querySelector('#crmRfqs').value.split('\n').map(s=>s.trim()).filter(Boolean).map((l,i)=>{
+    const antigos=c.rfqs||[];
+    const novos=host.querySelector('#crmRfqs').value.split('\n').map(s=>s.trim()).filter(Boolean).map((l,i)=>{
       const[descricao,valor,data,estado]=l.split('|').map(s=>(s||'').trim());
-      return{id:'r'+Date.now()+'_'+i,descricao:descricao||'',valor:+valor||0,data:data||'',estado:estadoRfq(estado)};
+      const existente=antigos.find(r=>r.descricao===descricao&&r.data===data);
+      if(existente){existente.valor=+valor||0;existente.estado=estadoRfq(estado);return existente}
+      return{id:'r'+Date.now()+'_'+i,descricao:descricao||'',valor:+valor||0,data:data||'',estado:estadoRfq(estado),justificacao:''};
     });
+    const novosIds=new Set(novos.map(r=>r.id));
+    antigos.forEach(r=>{if(!novosIds.has(r.id)&&r.justificacao)extrairAnexosHtml(r.justificacao).forEach(id=>imgDel(id))});
+    c.rfqs=novos;
     save();host.innerHTML='';renderAll();
   };
   host.scrollIntoView({block:'center'});
@@ -2483,8 +2514,8 @@ function promptMes(){
     rfqTxt='\n\nRFQs DO MÊS POR CLIENTE, DO CRM (total '+eur(tot)+')\n'+
       Object.entries(porCliente).map(([cli,arr])=>'- '+cli+': '+arr.map(r=>r.descricao+' ('+eur(r.valor)+', '+r.data+')').join('; ')).join('\n');
   }
-  return 'És o assistente do José Ribeiro, diretor comercial da Bontaz Portugal. Vou apresentar este ponto de situação de '+ymLabel(mes)+
-    ' ao Benoit e à Mary.\n\nTransforma os dados em baixo num relatório mensal claro e profissional, em português europeu, pronto a apresentar. '+
+  return 'És o assistente de um responsável comercial da Bontaz Portugal. Vou apresentar este ponto de situação de '+ymLabel(mes)+
+    ' à minha gestão.\n\nTransforma os dados em baixo num relatório mensal claro e profissional, em português europeu, pronto a apresentar. '+
     'Frases completas onde fizer sentido, foco no que importa para gestão: resultados comerciais, riscos, decisões pendentes. Não inventes números que não estejam nos dados.\n\n'+
     document.getElementById('rep').value+rfqTxt;
 }
@@ -2552,7 +2583,7 @@ function renderSemana(){
 
   const porEstado=k=>rfqs.filter(r=>estadoRfq(r.estado)===k).length;
   const grupos=[['Recebidas',rfqs.length,''],['Aguarda equipa',porEstado('aguarda_equipa'),''],
-    ['Aguarda cliente',porEstado('aguarda_cliente'),''],
+    ['Aguarda cliente',porEstado('aguarda_cliente'),''],['Recusadas',porEstado('recusada'),''],
     ['Enviadas',porEstado('enviada')+porEstado('ganha')+porEstado('perdida'),''],['Ganhas',porEstado('ganha'),'g']];
   const mx=Math.max(1,...grupos.map(g=>g[1]));
   document.getElementById('semFunil').innerHTML=grupos.map(([l,v,c])=>
@@ -2601,8 +2632,8 @@ function semanaTexto(mk){
   return r;
 }
 function promptSemana(){
-  return 'És o assistente do José Ribeiro, diretor comercial da Bontaz Portugal. Vou apresentar este report semanal, de '+
-    weekRangeLabel(semMk)+', ao Benoit e à Mary.\n\nTransforma os dados em baixo num report semanal claro e profissional, '+
+  return 'És o assistente de um responsável comercial da Bontaz Portugal. Vou apresentar este report semanal, de '+
+    weekRangeLabel(semMk)+', à minha gestão.\n\nTransforma os dados em baixo num report semanal claro e profissional, '+
     'em português europeu, pronto a apresentar. Frases completas onde fizer sentido, foco no que importa para gestão. '+
     'Não inventes números que não estejam nos dados.\n\n'+semanaTexto(semMk);
 }
@@ -2732,11 +2763,12 @@ function attachMention(el){
 let notaCaderno='';
 const PALETA_CADERNOS=['#4A6BB8','#3D8B75','#B08A2E','#A8341F','#7B4FA0','#1B6F62','#9A6A00','#2E6B8A'];
 function notaCorDefault(){return PALETA_CADERNOS[S.notas.cadernos.length%PALETA_CADERNOS.length]}
-function imagensDaPagina(p){
+function extrairAnexosHtml(html){
   const out=[];const re=/data-(?:imgid|fileid)="([^"]+)"/g;let m;
-  while((m=re.exec(p.corpo||'')))out.push(m[1]);
+  while((m=re.exec(html||'')))out.push(m[1]);
   return out;
 }
+function imagensDaPagina(p){return extrairAnexosHtml(p.corpo)}
 function tamanhoLegivel(b){
   if(b<1024)return b+' B';
   if(b<1024*1024)return Math.round(b/1024)+' KB';
@@ -2757,6 +2789,51 @@ function resolverAnexos(ce){
         document.body.appendChild(dl);dl.click();dl.remove()}
     };
   });
+}
+function criarCorpoRico(valorInicial,aoGravar,placeholder){
+  const ce=document.createElement('div');ce.className='pagina-corpo';ce.contentEditable='true';
+  ce.setAttribute('data-placeholder',placeholder||'Escreve aqui. Usa / para ligar a outro título, ou cola uma imagem com Ctrl+V.');
+  ce.innerHTML=valorInicial||'';
+  resolverAnexos(ce);
+  const gravar=()=>{
+    const tmp=document.createElement('div');tmp.innerHTML=ce.innerHTML;
+    tmp.querySelectorAll('img[data-imgid]').forEach(img=>img.removeAttribute('src'));
+    aoGravar(tmp.innerHTML);
+  };
+  ce.addEventListener('input',gravar);
+  attachMentionCE(ce);
+  attachImgResize(ce,gravar);
+  async function inserirAnexo(file){
+    const sel=window.getSelection();
+    let range=null;
+    if(sel&&sel.rangeCount&&ce.contains(sel.anchorNode))range=sel.getRangeAt(0).cloneRange();
+    const id='f'+Date.now()+Math.random().toString(36).slice(2,7);
+    await imgPut(id,file);
+    let node;
+    if(file.type.startsWith('image/')){
+      node=document.createElement('img');node.dataset.imgid=id;node.src=URL.createObjectURL(file);
+    } else {
+      node=document.createElement('a');node.href='#';node.className='attach-chip';node.contentEditable='false';
+      node.dataset.fileid=id;node.dataset.filename=file.name;
+      node.textContent='📎 '+file.name+' ('+tamanhoLegivel(file.size)+')';
+    }
+    if(!range){range=document.createRange();range.selectNodeContents(ce);range.collapse(false)}
+    range.deleteContents();range.insertNode(node);
+    range.setStartAfter(node);range.setEndAfter(node);
+    const sel2=window.getSelection();sel2.removeAllRanges();sel2.addRange(range);
+    ce.focus();resolverAnexos(ce);gravar();
+  }
+  ce.addEventListener('paste',e=>{
+    const items=[...(e.clipboardData&&e.clipboardData.items||[])];
+    const imgItem=items.find(it=>it.type&&it.type.startsWith('image/'));
+    if(!imgItem)return;
+    e.preventDefault();
+    inserirAnexo(imgItem.getAsFile());
+  });
+  const fi=document.createElement('input');fi.type='file';fi.multiple=true;fi.style.marginTop='8px';
+  fi.title='Imagens, PDF, email (.msg, .eml) ou qualquer outro ficheiro';
+  fi.onchange=async()=>{for(const f of[...fi.files])await inserirAnexo(f);fi.value=''};
+  return{corpo:ce,fileInput:fi};
 }
 function attachImgResize(ce,gravar){
   let handle=null,active=null;
@@ -2900,50 +2977,8 @@ function paginaEl(p){
   d.appendChild(h);
   if(p.aberta){
     const body=document.createElement('div');body.className='pc';
-    const ce=document.createElement('div');ce.className='pagina-corpo';ce.contentEditable='true';
-    ce.setAttribute('data-placeholder','Escreve aqui. Usa / para ligar a outro título, ou cola uma imagem com Ctrl+V.');
-    ce.innerHTML=p.corpo||'';
-    body.appendChild(ce);
-    resolverAnexos(ce);
-    const gravar=()=>{
-      const tmp=document.createElement('div');tmp.innerHTML=ce.innerHTML;
-      tmp.querySelectorAll('img[data-imgid]').forEach(img=>img.removeAttribute('src'));
-      p.corpo=tmp.innerHTML;save();
-    };
-    ce.addEventListener('input',gravar);
-    attachMentionCE(ce);
-    attachImgResize(ce,gravar);
-    async function inserirAnexo(file){
-      const sel=window.getSelection();
-      let range=null;
-      if(sel&&sel.rangeCount&&ce.contains(sel.anchorNode))range=sel.getRangeAt(0).cloneRange();
-      const id='f'+Date.now()+Math.random().toString(36).slice(2,7);
-      await imgPut(id,file);
-      let node;
-      if(file.type.startsWith('image/')){
-        node=document.createElement('img');node.dataset.imgid=id;node.src=URL.createObjectURL(file);
-      } else {
-        node=document.createElement('a');node.href='#';node.className='attach-chip';node.contentEditable='false';
-        node.dataset.fileid=id;node.dataset.filename=file.name;
-        node.textContent='📎 '+file.name+' ('+tamanhoLegivel(file.size)+')';
-      }
-      if(!range){range=document.createRange();range.selectNodeContents(ce);range.collapse(false)}
-      range.deleteContents();range.insertNode(node);
-      range.setStartAfter(node);range.setEndAfter(node);
-      const sel2=window.getSelection();sel2.removeAllRanges();sel2.addRange(range);
-      ce.focus();resolverAnexos(ce);gravar();
-    }
-    ce.addEventListener('paste',e=>{
-      const items=[...(e.clipboardData&&e.clipboardData.items||[])];
-      const imgItem=items.find(it=>it.type&&it.type.startsWith('image/'));
-      if(!imgItem)return;
-      e.preventDefault();
-      inserirAnexo(imgItem.getAsFile());
-    });
-    const fi=document.createElement('input');fi.type='file';fi.multiple=true;fi.style.marginTop='8px';
-    fi.title='Imagens, PDF, email (.msg, .eml) ou qualquer outro ficheiro';
-    fi.onchange=async()=>{for(const f of[...fi.files])await inserirAnexo(f);fi.value=''};
-    body.appendChild(fi);
+    const{corpo:ce,fileInput:fi}=criarCorpoRico(p.corpo,html=>{p.corpo=html;save()});
+    body.appendChild(ce);body.appendChild(fi);
     d.appendChild(body);
   }
   return d;
