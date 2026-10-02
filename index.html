@@ -157,7 +157,7 @@
   .acts button{border:1px solid var(--line);background:var(--card);font:inherit;font-size:12.5px;padding:4px 9px;border-radius:var(--r-sm);cursor:pointer;color:var(--navy)}
   .acts button:hover{border-color:var(--navy)}
   .anexos{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
-  #crmFiltros button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+  #crmFiltros button[aria-pressed="true"],#eqSeg button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
   #crmTop{grid-template-columns:repeat(3,1fr)}
   #semTop{grid-template-columns:repeat(5,1fr)}
   @media (max-width:820px){#semTop{grid-template-columns:repeat(2,1fr)}}
@@ -408,6 +408,7 @@
       <button role="tab" id="t-mes" aria-selected="false" data-en="Month">Mês</button>
       <button role="tab" id="t-semana" aria-selected="false" data-en="Week">Semana</button>
       <button role="tab" id="t-notas" aria-selected="false" data-en="Notes">Notas</button>
+      <button role="tab" id="t-equipas" aria-selected="false" data-en="Teams">Equipas</button>
     </nav>
   </header>
 
@@ -860,6 +861,24 @@
     </section>
 
     <!-- NOTAS -->
+    <section id="v-equipas" class="hidden">
+      <div class="panel">
+        <h2 data-en="Teams">Equipas</h2>
+        <p class="hint" data-en="The team artifacts, shown here so you can work on them without leaving the Agenda. If one does not load inside the page, use the button to open it in its own tab. The address is saved only on this device.">Os artifacts das equipas, mostrados aqui para trabalhares neles sem sair do Agenda. Se algum não carregar dentro da página, usa o botão para o abrir num separador próprio. O endereço fica guardado só neste dispositivo.</p>
+        <div class="addrow" id="eqSeg" style="margin:0 0 12px">
+          <button class="cta ghost" data-eq="bici" aria-pressed="true" data-en="Bicycles">Bicicletas</button>
+          <button class="cta ghost" data-eq="serv" aria-pressed="false" data-en="Services">Serviços</button>
+        </div>
+        <div class="addrow" style="margin:0 0 12px">
+          <input type="text" id="eqUrl" placeholder="https://claude.ai/artifact/...">
+          <button class="cta ghost" id="eqGuardar" data-en="Save address">Guardar endereço</button>
+          <button class="cta ghost" id="eqAbrir" data-en="Open in new tab">Abrir em separador</button>
+        </div>
+        <div id="eqNota" class="hint" style="margin:0 0 10px"></div>
+        <iframe id="eqFrame" title="Artifact" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card)" allow="clipboard-write"></iframe>
+      </div>
+    </section>
+
     <section id="v-notas" class="hidden">
       <div class="panel">
         <h2 data-en="Notes">Notas</h2>
@@ -2942,7 +2961,7 @@ function criarBarraFormatacao(ce,gravar){
   bt('<b>N</b>','Negrito (Ctrl+B)',()=>document.execCommand('bold'));
   bt('<u>S</u>','Sublinhado (Ctrl+U)',()=>document.execCommand('underline'));
   FORMAT_CORES.forEach(([cor,nome])=>{
-    const b=bt('','Realce '+nome,()=>document.execCommand('hiliteColor',false,cor));
+    const b=bt('','Realce '+nome+(cor===FORMAT_CORES[0][0]?' (Ctrl+<)':''),()=>document.execCommand('hiliteColor',false,cor));
     b.style.background=cor;b.className='fmtcor';
   });
   bt('⌫','Limpar formatação',()=>{document.execCommand('removeFormat');document.execCommand('hiliteColor',false,'transparent')});
@@ -2959,6 +2978,25 @@ function criarCorpoRico(valorInicial,aoGravar,placeholder){
     aoGravar(tmp.innerHTML);
   };
   const toolbar=criarBarraFormatacao(ce,gravar);
+  ce.addEventListener('keydown',e=>{
+    if(!e.ctrlKey||e.altKey||e.metaKey)return;
+    if(e.key!=='<'&&e.code!=='IntlBackslash')return;
+    e.preventDefault();
+    const sel=window.getSelection();
+    let nd=null,jaAmarelo=false;
+    if(sel&&sel.rangeCount){
+      const rg=sel.getRangeAt(0);
+      nd=rg.startContainer;
+      if(nd.nodeType===1&&nd.childNodes[rg.startOffset])nd=nd.childNodes[rg.startOffset];
+    }
+    if(nd&&nd.nodeType===3)nd=nd.parentNode;
+    while(nd&&nd!==ce&&nd.nodeType===1){
+      if(getComputedStyle(nd).backgroundColor.replace(/\s/g,'')==='rgb(255,233,168)'){jaAmarelo=true;break}
+      nd=nd.parentNode;
+    }
+    document.execCommand('hiliteColor',false,jaAmarelo?'transparent':FORMAT_CORES[0][0]);
+    gravar();
+  });
   ce.addEventListener('input',gravar);
   attachMentionCE(ce);
   attachImgResize(ce,gravar);
@@ -3277,12 +3315,44 @@ async function pedirPrioridade(){
 /* ---------- render geral e eventos ---------- */
 function renderAll(){renderBell();renderCal();renderSsi();renderDay();renderTasks();
   renderArquivo();renderTopics();renderCRM();renderMoms();renderFeiras();renderMes();renderPainel();renderDados();renderSemana();renderNotas()}
-const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes',semana:'v-semana',notas:'v-notas'};
+const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes',semana:'v-semana',notas:'v-notas',equipas:'v-equipas'};
+const EQ_KEY='bontaz:equipas:urls';
+const EQ_PADRAO={bici:'https://claude.ai/artifact/AfYXK3b1B6L5ASKYVLnVx5',serv:''};
+let eqAtual='bici',eqUrls={};
+function eqLer(){try{eqUrls=Object.assign({},EQ_PADRAO,JSON.parse(localStorage.getItem(EQ_KEY)||'{}'))}catch(e){eqUrls=Object.assign({},EQ_PADRAO)}}
+function eqMostrar(){
+  const url=eqUrls[eqAtual]||'';
+  document.getElementById('eqUrl').value=url;
+  document.querySelectorAll('#eqSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.eq===eqAtual));
+  const f=document.getElementById('eqFrame');
+  const ok=/^https:\/\/claude\.ai\/artifact\//.test(url);
+  f.style.display=ok?'':'none';
+  if(ok&&f.dataset.url!==url){f.dataset.url=url;f.src=url}
+  document.getElementById('eqNota').textContent=ok?'Se a janela abaixo ficar em branco ou pedir login, o claude.ai não deixa mostrar o artifact dentro de outra página: usa "Abrir em separador".':'Cola o endereço do artifact e clica em Guardar endereço.';
+}
+function initEquipas(){
+  const sec=document.getElementById('v-equipas');
+  if(!sec.dataset.pronto){
+    sec.dataset.pronto='1';eqLer();
+    document.querySelectorAll('#eqSeg button').forEach(b=>b.onclick=()=>{eqAtual=b.dataset.eq;eqMostrar()});
+    document.getElementById('eqGuardar').onclick=()=>{
+      eqUrls[eqAtual]=document.getElementById('eqUrl').value.trim();
+      try{localStorage.setItem(EQ_KEY,JSON.stringify(eqUrls))}catch(e){}
+      eqMostrar();
+    };
+    document.getElementById('eqAbrir').onclick=()=>{
+      const u=document.getElementById('eqUrl').value.trim();
+      if(/^https:\/\/claude\.ai\/artifact\//.test(u))window.open(u,'_blank','noopener');
+    };
+  }
+  eqMostrar();
+}
 function go(name){tab=name;
   document.getElementById('v-busca').classList.add('hidden');
   Object.entries(VIEWS).forEach(([k,v])=>{
     document.getElementById('t-'+k).setAttribute('aria-selected',k===name);
-    document.getElementById(v).classList.toggle('hidden',k!==name)})}
+    document.getElementById(v).classList.toggle('hidden',k!==name)});
+  if(name==='equipas')initEquipas()}
 Object.keys(VIEWS).forEach(k=>document.getElementById('t-'+k).onclick=()=>{
   document.getElementById('q').value='';closeMom();go(k)});
 document.getElementById('calPrev').onclick=()=>{calM--;if(calM<0){calM=11;calY--}renderCal()};
