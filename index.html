@@ -766,6 +766,12 @@
         </div>
         <div class="btnrow"><button class="cta ghost" id="objSave" data-en="Save goals">Guardar objetivos</button></div>
       </div>
+      <div class="panel">
+        <h2 data-en="Table for the KPI Excel">Tabela para o Excel dos KPIs</h2>
+        <p class="hint" data-en="Calculated from the CRM, split by Services and Bicycles. Copy a table and paste it straight into Excel. Months are counted by the RFQ date.">Calculado a partir do CRM, separado por Serviços e Bicicletas. Copia uma tabela e cola direto no Excel. Os meses contam pela data da RFQ.</p>
+        <div class="addrow" style="margin:0 0 12px"><select id="kxAno" style="width:110px;flex:none"></select></div>
+        <div id="kxHost"></div>
+      </div>
     </section>
 
     <!-- MES -->
@@ -864,18 +870,8 @@
     <section id="v-equipas" class="hidden">
       <div class="panel">
         <h2 data-en="Teams">Equipas</h2>
-        <p class="hint" data-en="The team artifacts, shown here so you can work on them without leaving the Agenda. If one does not load inside the page, use the button to open it in its own tab. The address is saved only on this device.">Os artifacts das equipas, mostrados aqui para trabalhares neles sem sair do Agenda. Se algum não carregar dentro da página, usa o botão para o abrir num separador próprio. O endereço fica guardado só neste dispositivo.</p>
-        <div class="addrow" id="eqSeg" style="margin:0 0 12px">
-          <button class="cta ghost" data-eq="bici" aria-pressed="true" data-en="Bicycles">Bicicletas</button>
-          <button class="cta ghost" data-eq="serv" aria-pressed="false" data-en="Services">Serviços</button>
-        </div>
-        <div class="addrow" style="margin:0 0 12px">
-          <input type="text" id="eqUrl" placeholder="https://claude.ai/artifact/...">
-          <button class="cta ghost" id="eqGuardar" data-en="Save address">Guardar endereço</button>
-          <button class="cta ghost" id="eqAbrir" data-en="Open in new tab">Abrir em separador</button>
-        </div>
-        <div id="eqNota" class="hint" style="margin:0 0 10px"></div>
-        <iframe id="eqFrame" title="Artifact" style="width:100%;height:78vh;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card)" allow="clipboard-write"></iframe>
+        <p class="hint" data-en="Buttons to open each team's artifact in its own tab. The address is saved only on this device.">Botões para abrir o artifact de cada equipa num separador próprio. O endereço fica guardado só neste dispositivo.</p>
+        <div id="eqLista"></div>
       </div>
     </section>
 
@@ -2303,6 +2299,52 @@ function renderDados(){
   document.getElementById('k_obj').value=o.ano||'';
   document.getElementById('k_objC').value=o.conv||'';
   document.getElementById('k_objP').value=o.prazo||'';
+  renderKpiExcel();
+}
+const KX_COLS=['Mês','RFQ recebidos','Cotações enviadas','Valor cotado €','Ganhas','Valor adjudicado €','Perdidas','Recusadas','Sem resposta'];
+function kxLinhas(dom,ano){
+  const rfqs=[];S.crm.filter(c=>c.dominio===dom).forEach(c=>(c.rfqs||[]).forEach(r=>rfqs.push(r)));
+  const soma=a=>a.reduce((s,r)=>s+(+r.valor||0),0);
+  const linhas=[];
+  for(let m=1;m<=12;m++){
+    const mk=ano+'-'+p2(m),doMes=rfqs.filter(r=>(r.data||'').slice(0,7)===mk);
+    const por=e=>doMes.filter(r=>estadoRfq(r.estado)===e);
+    const env=doMes.filter(r=>['enviada','ganha','perdida'].includes(estadoRfq(r.estado)));
+    linhas.push([MESN[m-1][0].toUpperCase()+MESN[m-1].slice(1),doMes.length,env.length,soma(env),por('ganha').length,soma(por('ganha')),por('perdida').length,por('recusada').length,por('semresposta').length]);
+  }
+  const tot=['Total'];for(let i=1;i<KX_COLS.length;i++)tot.push(linhas.reduce((s,l)=>s+l[i],0));
+  linhas.push(tot);
+  const ab=rfqs.filter(r=>RFQ_ABERTAS_ESTADOS.includes(estadoRfq(r.estado)));
+  return{linhas,carteira:[ab.length,soma(ab)]};
+}
+function kxCopiar(texto,btn){
+  const ok=()=>{const t=btn.textContent;btn.textContent='Copiado';setTimeout(()=>btn.textContent=t,1500)};
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=texto;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');ok()}catch(e){btn.textContent='Usa Ctrl+C'}ta.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(texto).then(ok,fallback);else fallback();
+}
+function renderKpiExcel(){
+  const sel=document.getElementById('kxAno');
+  if(!sel.options.length){
+    anosDisponiveis().forEach(a=>sel.add(new Option(a,a)));
+    sel.value=new Date().getFullYear();
+    sel.onchange=renderKpiExcel;
+  }
+  const ano=+sel.value,host=document.getElementById('kxHost');host.innerHTML='';
+  [['servicos','Serviços'],['bicicletas','Bicicletas']].forEach(([dom,nome])=>{
+    const{linhas,carteira}=kxLinhas(dom,ano);
+    const tsv=[KX_COLS.join('\t'),...linhas.map(l=>l.join('\t'))].join('\n');
+    const box=document.createElement('div');box.style.marginBottom='18px';
+    const head=document.createElement('div');head.className='btnrow';head.style.margin='0 0 8px';
+    head.innerHTML='<b>'+nome+' '+ano+'</b><span class="hint" style="margin:0">Em carteira agora: '+carteira[0]+' RFQ, '+eur(carteira[1])+'</span>';
+    const b=document.createElement('button');b.className='cta ghost';b.textContent='Copiar para Excel';
+    b.onclick=()=>kxCopiar(tsv,b);head.appendChild(b);
+    const wrap=document.createElement('div');wrap.style.overflowX='auto';
+    wrap.innerHTML='<table style="border-collapse:collapse;font-size:12.5px;width:100%"><thead><tr>'+
+      KX_COLS.map(c=>'<th style="text-align:'+(c==='Mês'?'left':'right')+';padding:4px 8px;border-bottom:1px solid var(--line);color:var(--steel);font-weight:600;white-space:nowrap">'+c+'</th>').join('')+'</tr></thead><tbody>'+
+      linhas.map((l,i)=>'<tr'+(i===12?' style="font-weight:650"':'')+'>'+l.map((v,j)=>'<td style="padding:4px 8px;border-bottom:1px solid var(--line);text-align:'+(j?'right':'left')+';font-variant-numeric:tabular-nums">'+(j===3||j===5?eur(v):v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    box.append(head,wrap);host.appendChild(box);
+  });
 }
 function guardarKpi(){
   const o={};KF.forEach(f=>{const el=document.getElementById('k_'+f);
@@ -2951,7 +2993,8 @@ function resolverAnexos(ce){
     };
   });
 }
-const FORMAT_CORES=[['#FFE9A8','amarelo'],['#F4DDD6','vermelho'],['#E1EAD8','verde']];
+const FORMAT_CORES=[['#FFD84D','amarelo'],['#F4A39B','vermelho'],['#A9D8A8','verde']];
+const FORMAT_RAPIDA=1;
 function criarBarraFormatacao(ce,gravar){
   const bar=document.createElement('div');bar.className='fmtbar';
   const bt=(html,titulo,acao)=>{const b=document.createElement('button');b.type='button';b.innerHTML=html;b.title=titulo;
@@ -2961,7 +3004,7 @@ function criarBarraFormatacao(ce,gravar){
   bt('<b>N</b>','Negrito (Ctrl+B)',()=>document.execCommand('bold'));
   bt('<u>S</u>','Sublinhado (Ctrl+U)',()=>document.execCommand('underline'));
   FORMAT_CORES.forEach(([cor,nome])=>{
-    const b=bt('','Realce '+nome+(cor===FORMAT_CORES[0][0]?' (Ctrl+<)':''),()=>document.execCommand('hiliteColor',false,cor));
+    const b=bt('','Realce '+nome+(cor===FORMAT_CORES[FORMAT_RAPIDA][0]?' (Ctrl+<)':''),()=>document.execCommand('hiliteColor',false,cor));
     b.style.background=cor;b.className='fmtcor';
   });
   bt('⌫','Limpar formatação',()=>{document.execCommand('removeFormat');document.execCommand('hiliteColor',false,'transparent')});
@@ -2983,7 +3026,9 @@ function criarCorpoRico(valorInicial,aoGravar,placeholder){
     if(e.key!=='<'&&e.code!=='IntlBackslash')return;
     e.preventDefault();
     const sel=window.getSelection();
-    let nd=null,jaAmarelo=false;
+    const corRapida=FORMAT_CORES[FORMAT_RAPIDA][0];
+    const rgbRapida='rgb('+[1,3,5].map(i=>parseInt(corRapida.substr(i,2),16)).join(',')+')';
+    let nd=null,jaMarcado=false;
     if(sel&&sel.rangeCount){
       const rg=sel.getRangeAt(0);
       nd=rg.startContainer;
@@ -2991,10 +3036,10 @@ function criarCorpoRico(valorInicial,aoGravar,placeholder){
     }
     if(nd&&nd.nodeType===3)nd=nd.parentNode;
     while(nd&&nd!==ce&&nd.nodeType===1){
-      if(getComputedStyle(nd).backgroundColor.replace(/\s/g,'')==='rgb(255,233,168)'){jaAmarelo=true;break}
+      if(getComputedStyle(nd).backgroundColor.replace(/\s/g,'')===rgbRapida){jaMarcado=true;break}
       nd=nd.parentNode;
     }
-    document.execCommand('hiliteColor',false,jaAmarelo?'transparent':FORMAT_CORES[0][0]);
+    document.execCommand('hiliteColor',false,jaMarcado?'transparent':corRapida);
     gravar();
   });
   ce.addEventListener('input',gravar);
@@ -3318,34 +3363,30 @@ function renderAll(){renderBell();renderCal();renderSsi();renderDay();renderTask
 const VIEWS={painel:'v-painel',dia:'v-dia',tarefas:'v-tarefas',topicos:'v-topicos',crm:'v-crm',atas:'v-atas',feiras:'v-feiras',arquivo:'v-arquivo',dados:'v-dados',mes:'v-mes',semana:'v-semana',notas:'v-notas',equipas:'v-equipas'};
 const EQ_KEY='bontaz:equipas:urls';
 const EQ_PADRAO={bici:'https://claude.ai/artifact/AfYXK3b1B6L5ASKYVLnVx5',serv:''};
-let eqAtual='bici',eqUrls={};
+const EQ_NOMES={bici:'Bicicletas',serv:'Serviços'};
+const EQ_OK=u=>/^https:\/\/claude\.ai\/artifact\//.test(u);
+let eqUrls={};
 function eqLer(){try{eqUrls=Object.assign({},EQ_PADRAO,JSON.parse(localStorage.getItem(EQ_KEY)||'{}'))}catch(e){eqUrls=Object.assign({},EQ_PADRAO)}}
-function eqMostrar(){
-  const url=eqUrls[eqAtual]||'';
-  document.getElementById('eqUrl').value=url;
-  document.querySelectorAll('#eqSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.eq===eqAtual));
-  const f=document.getElementById('eqFrame');
-  const ok=/^https:\/\/claude\.ai\/artifact\//.test(url);
-  f.style.display=ok?'':'none';
-  if(ok&&f.dataset.url!==url){f.dataset.url=url;f.src=url}
-  document.getElementById('eqNota').textContent=ok?'Se a janela abaixo ficar em branco ou pedir login, o claude.ai não deixa mostrar o artifact dentro de outra página: usa "Abrir em separador".':'Cola o endereço do artifact e clica em Guardar endereço.';
-}
 function initEquipas(){
-  const sec=document.getElementById('v-equipas');
-  if(!sec.dataset.pronto){
-    sec.dataset.pronto='1';eqLer();
-    document.querySelectorAll('#eqSeg button').forEach(b=>b.onclick=()=>{eqAtual=b.dataset.eq;eqMostrar()});
-    document.getElementById('eqGuardar').onclick=()=>{
-      eqUrls[eqAtual]=document.getElementById('eqUrl').value.trim();
+  eqLer();
+  const box=document.getElementById('eqLista');box.innerHTML='';
+  Object.keys(EQ_NOMES).forEach(k=>{
+    const row=document.createElement('div');row.className='addrow';row.style.margin='0 0 10px';
+    row.innerHTML='<input type="text" placeholder="https://claude.ai/artifact/..." style="flex:1;min-width:220px">'+
+      '<button class="cta ghost"></button><button class="cta ghost">Guardar endereço</button>';
+    const inp=row.querySelector('input'),abrir=row.querySelectorAll('button')[0],guardar=row.querySelectorAll('button')[1];
+    inp.value=eqUrls[k]||'';
+    abrir.textContent='Abrir '+EQ_NOMES[k];
+    const atualizar=()=>{abrir.disabled=!EQ_OK(inp.value.trim())};
+    inp.oninput=atualizar;atualizar();
+    abrir.onclick=()=>{const u=inp.value.trim();if(EQ_OK(u))window.open(u,'_blank','noopener')};
+    guardar.onclick=()=>{
+      eqUrls[k]=inp.value.trim();
       try{localStorage.setItem(EQ_KEY,JSON.stringify(eqUrls))}catch(e){}
-      eqMostrar();
+      guardar.textContent='Guardado';setTimeout(()=>guardar.textContent='Guardar endereço',1500);
     };
-    document.getElementById('eqAbrir').onclick=()=>{
-      const u=document.getElementById('eqUrl').value.trim();
-      if(/^https:\/\/claude\.ai\/artifact\//.test(u))window.open(u,'_blank','noopener');
-    };
-  }
-  eqMostrar();
+    box.appendChild(row);
+  });
 }
 function go(name){tab=name;
   document.getElementById('v-busca').classList.add('hidden');
