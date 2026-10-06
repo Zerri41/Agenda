@@ -354,6 +354,9 @@
   .mom .mh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
   .mom .mh b{flex:1;min-width:180px;font-weight:600}
   .mom .who{color:var(--steel);font-size:12.5px;margin:3px 0 0}
+  .serie{border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;background:var(--card)}
+  .serie .mom{padding:6px 0 2px}
+  .serie .mom:last-child{border-bottom:0}
   .mom pre{white-space:pre-wrap;font:inherit;font-size:13.5px;margin:8px 0 0;color:#3A2E22;max-width:78ch}
   .mom .corpo-ata{white-space:normal;font:inherit;font-size:13.5px;margin:8px 0 0;color:#3A2E22;max-width:78ch;line-height:1.5}
   .mom .corpo-ata img{max-width:100%;border-radius:8px}
@@ -654,6 +657,13 @@
         <p class="hint" data-en="Everything stays as text on the page, so the browser's Ctrl+F finds any word.">Tudo fica em texto na página, por isso o Ctrl+F do navegador encontra qualquer palavra.</p>
         <div class="btnrow" style="margin:0 0 6px"><button class="cta ghost" id="newMomBtn2" data-en="New minutes">Nova ata</button></div>
         <div id="momHostAtas"></div>
+        <h3 class="sub" data-en="Meeting series (weekly follow-ups)">Séries de reuniões (follow-ups semanais)</h3>
+        <div class="addrow" style="margin:0 0 10px">
+          <input type="text" id="serNome" placeholder="Ex: Follow-up com Benoit" data-en-ph="E.g. Follow-up with Benoit">
+          <button class="cta ghost" id="serNova" data-en="New series">Nova série</button>
+        </div>
+        <div id="momSeries"></div>
+        <h3 class="sub" id="momOutrasT" data-en="Other minutes">Outras atas</h3>
         <div id="momList"></div>
       </div>
     </section>
@@ -985,6 +995,11 @@ function addDays(iso,n){const d=new Date(iso+'T00:00');d.setDate(d.getDate()+n);
 function proxSegunda(){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7));return key(d)}
 function esc(s){const d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
 function textoParaHtml(s){return esc(s||'').replace(/\n/g,'<br>')}
+const TEM_TAGS=/<\/?(br|b|u|i|span|div|p|a|img|li|ul|ol|strong|em|mark)\b/i;
+function normRico(s){s=s==null?'':String(s);
+  if(/&lt;\/?(br|b|u|span|div|a|p)\b/i.test(s)&&!TEM_TAGS.test(s)){const t=document.createElement('textarea');t.innerHTML=s;return t.value}
+  return s}
+function htmlSeguro(s){s=normRico(s);return TEM_TAGS.test(s)?s:textoParaHtml(s)}
 function textoPlano(html){const d=document.createElement('div');d.innerHTML=html||'';return d.textContent||''}
 const n1=v=>Math.round(v*100)/100;
 const eur=v=>(v||0).toLocaleString('pt-PT',{maximumFractionDigits:0})+' €';
@@ -1013,19 +1028,19 @@ function pack(){return{app:'agenda-bontaz',versao:9,gerado:new Date().toISOStrin
 function aplicarPack(p){
   if(!p||!p.core)throw new Error('ficheiro sem dados');
   S=p.core;M=p.moms||{atas:[]};
-  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.deptCores=S.deptCores||{};S.espelhoBicicletas=S.espelhoBicicletas||{atualizadoEm:'',acoesAbertas:[],artifactUrl:''};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});M.atas=M.atas||[];
+  S.topicos=S.topicos||[];S.tarefas=S.tarefas||[];S.dias=S.dias||{};S.ssi=S.ssi||[];S.kpis=S.kpis||{};S.obj=S.obj||{};S.feiras=S.feiras||[];S.crm=S.crm||[];S.semanal=S.semanal||{};S.deptCores=S.deptCores||{};S.espelhoBicicletas=S.espelhoBicicletas||{atualizadoEm:'',acoesAbertas:[],artifactUrl:''};S.notas=S.notas||{cadernos:[],paginas:[]};S.notas.cadernos=S.notas.cadernos||[];S.notas.paginas=S.notas.paginas||[];S.notas.paginas.forEach(p=>{p.imagens=p.imagens||[];if(p.aberta===undefined)p.aberta=false});M.atas=M.atas||[];M.series=M.series||[];
   if(!S.feiras.length)S.feiras=seedFeiras();
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[];f.tipo=f.tipo||'feira';
-    if(!f._registoRico){f.registo.forEach(e=>{e.texto=textoParaHtml(e.texto)});f._registoRico=true}});
+    if(!f._registoRico){f.registo.forEach(e=>{e.texto=htmlSeguro(e.texto)});f._registoRico=true}else f.registo.forEach(e=>{e.texto=normRico(e.texto)})});
   S.tarefas.forEach(t=>{if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
     if(t.nota===undefined)t.nota='';if(!t.prazo)t.prazo=today();
-    if(!t._notaRica){t.nota=textoParaHtml(t.nota);t.log.forEach(l=>{l.texto=textoParaHtml(l.texto)});t._notaRica=true}});
+    if(!t._notaRica){t.nota=htmlSeguro(t.nota);t.log.forEach(l=>{l.texto=htmlSeguro(l.texto)});t._notaRica=true}else{t.nota=normRico(t.nota);t.log.forEach(l=>{l.texto=normRico(l.texto)})}});
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
-  Object.values(S.semanal).forEach(sr=>{if(!sr._notaRica){sr.nota=textoParaHtml(sr.nota);sr._notaRica=true}});
+  Object.values(S.semanal).forEach(sr=>{if(!sr._notaRica){sr.nota=htmlSeguro(sr.nota);sr._notaRica=true}else sr.nota=normRico(sr.nota)});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
     if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
     c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado);if(r.justificacao===undefined)r.justificacao=''})});
-  M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId='';if(!a._rico){a.corpo=textoParaHtml(a.corpo);a._rico=true}});
+  M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId='';if(!a._rico){a.corpo=htmlSeguro(a.corpo);a._rico=true}else a.corpo=normRico(a.corpo)});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   S.seeded=true;
 }
@@ -1333,20 +1348,20 @@ async function load(){
   if(!S.feiras.length)S.feiras=seedFeiras();
   S.feiras.forEach(f=>{f.ver=f.ver||[];f.reunioes=f.reunioes||[];f.registo=f.registo||[];
     if(f.previsto===undefined)f.previsto=false;f.tipo=f.tipo||'feira';
-    if(!f._registoRico){f.registo.forEach(e=>{e.texto=textoParaHtml(e.texto)});f._registoRico=true}});
+    if(!f._registoRico){f.registo.forEach(e=>{e.texto=htmlSeguro(e.texto)});f._registoRico=true}else f.registo.forEach(e=>{e.texto=normRico(e.texto)})});
   S.seeded=true;
   S.tarefas.forEach(t=>{if(!t.prazo)t.prazo=today();if(t.nota===undefined)t.nota='';
     if(!Array.isArray(t.log))t.log=[];if(t.topicoId===undefined)t.topicoId='';
-    if(!t._notaRica){t.nota=textoParaHtml(t.nota);t.log.forEach(l=>{l.texto=textoParaHtml(l.texto)});t._notaRica=true}});
+    if(!t._notaRica){t.nota=htmlSeguro(t.nota);t.log.forEach(l=>{l.texto=htmlSeguro(l.texto)});t._notaRica=true}else{t.nota=normRico(t.nota);t.log.forEach(l=>{l.texto=normRico(l.texto)})}});
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
-  Object.values(S.semanal).forEach(sr=>{if(!sr._notaRica){sr.nota=textoParaHtml(sr.nota);sr._notaRica=true}});
+  Object.values(S.semanal).forEach(sr=>{if(!sr._notaRica){sr.nota=htmlSeguro(sr.nota);sr._notaRica=true}else sr.nota=normRico(sr.nota)});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
     if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
     c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado);if(r.justificacao===undefined)r.justificacao=''})});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   let m=await jget(K_MOM);if(!m)m=await jget(K_OLDM);
-  if(m)M=m;M.atas=M.atas||[];
-  M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId='';if(!a._rico){a.corpo=textoParaHtml(a.corpo);a._rico=true}});
+  if(m)M=m;M.atas=M.atas||[];M.series=M.series||[];
+  M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId='';if(!a._rico){a.corpo=htmlSeguro(a.corpo);a._rico=true}else a.corpo=normRico(a.corpo)});
   baseMtime=S.mtime||'';
   await stSet(K_CORE,JSON.stringify(S));await stSet(K_MOM,JSON.stringify(M));escreverFH();
 }
@@ -1402,7 +1417,7 @@ function resolveTop(sel,dominio){
 function addTask(texto,dominio,prazo,origem,topicoId){
   const t={id:'k'+Date.now()+Math.random().toString(36).slice(2,5),texto,dominio,
     prazo:prazo&&/^\d{4}-\d{2}-\d{2}$/.test(prazo)?prazo:today(),topicoId:topicoId||'',
-    feito:false,feitoEm:'',criado:today(),transportes:0,origem:origem||'',nota:'',log:[]};
+    feito:false,feitoEm:'',criado:today(),transportes:0,origem:origem||'',nota:'',log:[],_notaRica:true};
   S.tarefas.unshift(t);save();return t;
 }
 function logEntry(t,texto,de,para){
@@ -1722,6 +1737,7 @@ function buildEditor(){
   e.innerHTML='<h3 id="momEdTitle">Nova ata</h3>'+
     '<div class="grid2"><div><label class="f">Reunião</label><input type="text" id="mT" placeholder="Cliente ou assunto"></div>'+
     '<div><label class="f">Tópico</label><select id="mTop"></select></div></div>'+
+    '<div style="margin-top:10px"><label class="f">Série de reuniões, opcional</label><select id="mSer"></select></div>'+
     '<div class="grid3" style="margin-top:10px"><div><label class="f">Data</label><input type="date" id="mDt"></div>'+
     '<div><label class="f">Domínio</label><select id="mD">'+Object.entries(DOM).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
     '<div><label class="f">Participantes</label><input type="text" id="mP" placeholder="Nomes"></div></div>'+
@@ -1734,31 +1750,109 @@ function buildEditor(){
   return e;
 }
 function closeMom(){const e=document.getElementById('momEditor');if(e)e.remove();momEdit=null}
-function openMom(a,host,topId){
+function openMom(a,host,topId,serieId){
   closeMom();
   const e=buildEditor();document.getElementById(host||'momHostDia').appendChild(e);
   momEdit=a?a.id:null;
-  e.querySelector('#momEdTitle').textContent=a?'Editar ata':'Nova ata de '+fmt(viewDate);
-  e.querySelector('#mT').value=a?a.titulo:'';
-  e.querySelector('#mDt').value=a?a.data:key(viewDate);
-  e.querySelector('#mD').value=a?a.dominio:PLANO[viewDate.getDay()].dom;
-  e.querySelector('#mP').value=a?a.participantes:'';
-  momCorpoHtml=a?(a.corpo||''):textoParaHtml(TPL);
+  const serie=serieId?(M.series||[]).find(s=>s.id===serieId):null;
+  const ult=serie?serieEntradas(serie.id)[0]:null;
+  const selSer=e.querySelector('#mSer');
+  selSer.innerHTML='<option value="">— nenhuma —</option>'+(M.series||[]).map(s=>'<option value="'+s.id+'">'+esc(s.nome)+'</option>').join('');
+  selSer.value=a?(a.serieId||''):(serie?serie.id:'');
+  e.querySelector('#momEdTitle').textContent=a?'Editar ata':serie?'Nova reunião: '+serie.nome:'Nova ata de '+fmt(viewDate);
+  e.querySelector('#mT').value=a?a.titulo:serie?serie.nome:'';
+  e.querySelector('#mDt').value=a?a.data:serie?today():key(viewDate);
+  e.querySelector('#mD').value=a?a.dominio:ult?ult.dominio:PLANO[viewDate.getDay()].dom;
+  e.querySelector('#mP').value=a?a.participantes:ult?ult.participantes:'';
+  momCorpoHtml=a?(a.corpo||''):serie?corpoSerie(serie):textoParaHtml(TPL);
   const{corpo:mCe,fileInput:mFi,toolbar:mTb}=criarCorpoRico(momCorpoHtml,html=>{momCorpoHtml=html},'Escreve aqui a ata...');
   const mBHost=e.querySelector('#mBHost');mBHost.appendChild(mTb);mBHost.appendChild(mCe);mBHost.appendChild(mFi);
   fillTopSelect(e.querySelector('#mTop'),a?a.topicoId:(topId||''));
   e.querySelector('#mT').focus();e.scrollIntoView({block:'center'});
 }
 let momCorpoHtml='';
+const SEC_TITULOS=['objetivo da reunião','pontos discutidos','decisões tomadas','pendente do lado deles','pendente do nosso lado','notas técnicas','próximo contacto'];
+const serieHistAberto=new Set(),serieEntAberta=new Set();
+function serieEntradas(id){return M.atas.filter(a=>a.serieId===id).sort((a,b)=>a.data<b.data?1:a.data>b.data?-1:(a.id<b.id?1:-1))}
+function htmlParaLinhas(html){
+  const t=String(html||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/(div|p|li)>/gi,'\n');
+  return textoPlano(t).split('\n').map(x=>x.replace(/ /g,' ').trimEnd());
+}
+function pendentesDe(ata){
+  const out=[];let ativo=false;
+  htmlParaLinhas(ata.corpo).forEach(l=>{
+    const k=l.trim().toLowerCase();
+    if(SEC_TITULOS.includes(k)){ativo=/^pendente/.test(k);return}
+    if(ativo&&l.trim()&&!/^-\s*$/.test(l.trim()))out.push(l.trim());
+  });
+  return out;
+}
+function corpoSerie(s){
+  const ult=serieEntradas(s.id)[0],ab=S.tarefas.filter(t=>t.serieId===s.id&&!t.feito);
+  let txt='';
+  if(ult){const p=pendentesDe(ult);txt+='Pendentes da reunião anterior ('+ult.data+')\n'+(p.length?p.join('\n'):'- nada registado')+'\n\n'}
+  if(ab.length)txt+='Ações em aberto\n'+ab.map(t=>'- '+t.texto+' (prazo '+t.prazo+')').join('\n')+'\n\n';
+  return textoParaHtml(txt+TPL);
+}
+function renderSeries(){
+  const host=document.getElementById('momSeries');host.innerHTML='';
+  const ss=M.series||[];
+  document.getElementById('momOutrasT').style.display=ss.length?'':'none';
+  if(!ss.length){host.innerHTML='<p class="hint" style="margin:0 0 10px">Cria uma série para cada reunião recorrente (por exemplo, um follow-up semanal) e acrescenta uma entrada por data.</p>';return}
+  ss.forEach(s=>{
+    const es=serieEntradas(s.id),ab=S.tarefas.filter(t=>t.serieId===s.id&&!t.feito);
+    const box=document.createElement('div');box.className='serie';
+    const h=document.createElement('div');h.className='btnrow';h.style.margin='0 0 8px';
+    h.innerHTML='<b style="font-size:15px;flex:1;min-width:160px">'+esc(s.nome)+'</b><span class="st">'+es.length+(es.length===1?' reunião':' reuniões')+(es[0]?', última a '+esc(es[0].data):'')+'</span>';
+    const mk=(txt,fn,cls)=>{const b=document.createElement('button');b.className=cls||'cta ghost';b.style.padding='5px 11px';b.style.fontSize='12.5px';b.textContent=txt;b.onclick=fn;h.appendChild(b)};
+    mk('Nova reunião',()=>openMom(null,'momHostAtas','',s.id),'cta');
+    if(es.length>1)mk((serieHistAberto.has(s.id)?'Esconder histórico':'Histórico ('+(es.length-1)+')'),()=>{
+      if(serieHistAberto.has(s.id))serieHistAberto.delete(s.id);else serieHistAberto.add(s.id);renderSeries()});
+    mk('Renomear',()=>{const n=prompt('Nome da série:',s.nome);if(n&&n.trim()){s.nome=n.trim();saveMoms();renderAll()}});
+    mk('Eliminar série',()=>{if(confirm('Eliminar a série "'+s.nome+'"? As reuniões ficam como atas normais.')){
+      M.atas.forEach(a=>{if(a.serieId===s.id)a.serieId=''});M.series=M.series.filter(x=>x.id!==s.id);saveMoms();renderAll()}});
+    box.appendChild(h);
+    if(ab.length){
+      const p=document.createElement('p');p.className='hint';p.style.margin='0 0 6px';
+      p.textContent='Ações em aberto desta série ('+ab.length+'): '+ab.slice(0,3).map(t=>t.texto).join('; ')+(ab.length>3?'...':'');
+      box.appendChild(p);
+    }
+    if(es[0])box.appendChild(momEl(es[0]));
+    else{const p=document.createElement('p');p.className='empty';p.textContent='Ainda sem reuniões. Clica em "Nova reunião".';box.appendChild(p)}
+    if(es.length>1&&serieHistAberto.has(s.id)){
+      const hist=document.createElement('div');hist.style.cssText='margin-top:8px;border-top:1px dashed var(--line);padding-top:6px';
+      es.slice(1).forEach(a=>{
+        const aberta=serieEntAberta.has(a.id);
+        const row=document.createElement('div');
+        const cab=document.createElement('div');cab.style.cssText='cursor:pointer;padding:5px 2px;font-size:13px;display:flex;gap:8px;align-items:baseline';
+        const resumo=textoPlano(a.corpo).replace(/\s+/g,' ').trim().slice(0,90);
+        cab.innerHTML='<span style="display:inline-block;transition:transform .15s;transform:rotate('+(aberta?90:0)+'deg)">▸</span><b>'+esc(a.data)+'</b><span style="color:var(--steel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">'+esc(resumo)+'</span>';
+        cab.onclick=()=>{if(serieEntAberta.has(a.id))serieEntAberta.delete(a.id);else serieEntAberta.add(a.id);renderSeries()};
+        row.appendChild(cab);
+        if(aberta)row.appendChild(momEl(a));
+        hist.appendChild(row);
+      });
+      box.appendChild(hist);
+    }
+    host.appendChild(box);
+  });
+}
+function criarSerie(){
+  const inp=document.getElementById('serNome'),n=inp.value.trim();if(!n)return;
+  M.series=M.series||[];
+  if(M.series.some(s=>s.nome.toLowerCase()===n.toLowerCase())){alert('Já existe uma série com esse nome.');return}
+  M.series.push({id:'s'+Date.now(),nome:n});inp.value='';saveMoms();renderAll();
+}
 function saveMom(){
   const g=id=>document.getElementById(id);
   const t=g('mT').value.trim();if(!t){g('mT').focus();return}
   const dom=g('mD').value;
   const o={titulo:t,data:g('mDt').value||today(),dominio:dom,participantes:g('mP').value.trim(),
-    corpo:momCorpoHtml,topicoId:resolveTop(g('mTop'),dom)};
-  if(momEdit){Object.assign(M.atas.find(x=>x.id===momEdit),o)}else{o.id='m'+Date.now();M.atas.unshift(o)}
+    corpo:momCorpoHtml,topicoId:resolveTop(g('mTop'),dom),serieId:g('mSer').value||''};
+  if(momEdit){Object.assign(M.atas.find(x=>x.id===momEdit),o)}else{o.id='m'+Date.now();o._rico=true;M.atas.unshift(o)}
   const acoes=g('mA').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  acoes.forEach(l=>{const[txt,pz]=l.split('|').map(s=>(s||'').trim());if(txt)addTask(txt,dom,pz,t,o.topicoId)});
+  acoes.forEach(l=>{const[txt,pz]=l.split('|').map(s=>(s||'').trim());
+    if(txt){const nt=addTask(txt,dom,pz,t,o.topicoId);if(o.serieId)nt.serieId=o.serieId}});
   saveMoms();save();closeMom();renderAll();
   if(acoes.length)alert(acoes.length+(acoes.length>1?' tarefas criadas':' tarefa criada')+' a partir da ata.');
 }
@@ -2111,11 +2205,13 @@ document.getElementById('ncAdd').onclick=()=>{
   inp.value='';save();renderAll();
 };
 function renderMoms(){
-  const l=[...M.atas].sort((a,b)=>a.data<b.data?1:-1);
-  document.getElementById('momC').textContent=l.length;
+  const emSerie=a=>a.serieId&&(M.series||[]).some(s=>s.id===a.serieId);
+  const l=[...M.atas].filter(a=>!emSerie(a)).sort((a,b)=>a.data<b.data?1:-1);
+  document.getElementById('momC').textContent=M.atas.length;
   const box=document.getElementById('momList');box.innerHTML='';
-  if(!l.length)box.innerHTML='<p class="empty">Sem atas.</p>';
+  if(!l.length)box.innerHTML='<p class="empty">Sem atas fora de séries.</p>';
   l.forEach(a=>box.appendChild(momEl(a)));
+  renderSeries();
 }
 function renderBell(){
   const late=atrasadas(),soon=aVencer(3),n=late.length+soon.length;
@@ -2413,7 +2509,7 @@ const SEED_FEIRAS=[];
 function seedFeiras(){
   return SEED_FEIRAS.map((s,i)=>({id:'f'+i,nome:s.n,inicio:s.i,fim:s.f||s.i,local:s.l,pais:s.p,
     categoria:s.c,dominio:s.d,previsto:!!s.prev,estado:s.e,descricao:s.desc||'',topicoId:'',custo:'',
-    ver:(s.ver||[]).map((v,j)=>({id:'v'+i+'_'+j,texto:v,feito:false})),reunioes:[],registo:[],notas:''}));
+    ver:(s.ver||[]).map((v,j)=>({id:'v'+i+'_'+j,texto:v,feito:false})),reunioes:[],registo:[],notas:'',_registoRico:true}));
 }
 const feiraDias=f=>{const a=[];let d=f.inicio;let g=0;
   while(d<=f.fim&&g<40){a.push(d);d=addDays(d,1);g++}return a};
@@ -2649,7 +2745,7 @@ function novaFeira(tipo){
   const i=prompt('Data de início, aaaa-mm-dd:',today());if(!i)return;
   const f={id:'f'+Date.now(),nome:n.trim(),inicio:i.trim(),fim:i.trim(),local:'',pais:'PT',tipo:tipo,
     categoria:'servicos',dominio:PLANO[viewDate.getDay()].dom,previsto:true,estado:'avaliar',
-    descricao:'',topicoId:'',custo:'',ver:[],reunioes:[],registo:[],notas:''};
+    descricao:'',topicoId:'',custo:'',ver:[],reunioes:[],registo:[],notas:'',_registoRico:true};
   S.feiras.push(f);abertoF[f.id]='edit';save();go('feiras');renderAll();
 }
 function feirasMd(){
@@ -2797,7 +2893,7 @@ function semanaDados(mk){
   const rfqs=[];S.crm.forEach(c=>(c.rfqs||[]).forEach(r=>{if(emPeriodo(r.data))rfqs.push(Object.assign({},r,{cliente:c.nome}))}));
   return{fechadas,atas,topFechados,visitas,rfqs};
 }
-function semReg(mk){S.semanal[mk]=S.semanal[mk]||{removidos:[],nota:''};return S.semanal[mk]}
+function semReg(mk){S.semanal[mk]=S.semanal[mk]||{removidos:[],nota:'',_notaRica:true};return S.semanal[mk]}
 function marcoRemover(mk,id){semReg(mk).removidos.push(id);save();renderSemana()}
 function marcoEl(mk,id,tipo,data,texto){
   const d=document.createElement('div');d.className='ln';
@@ -3478,6 +3574,8 @@ document.getElementById('addBtn').onclick=()=>{
   ['nT','nP','nA','nR'].forEach(i=>document.getElementById(i).value='');save();renderAll()};
 document.getElementById('newMomBtn').onclick=()=>openMom(null,'momHostDia');
 document.getElementById('newMomBtn2').onclick=()=>openMom(null,'momHostAtas');
+document.getElementById('serNova').onclick=criarSerie;
+document.getElementById('serNome').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();criarSerie()}});
 document.getElementById('aiBtn').onclick=pedirPrioridade;
 document.getElementById('ssiBtn').onclick=registarSsi;
 document.getElementById('rollBtn').onclick=rollover;
