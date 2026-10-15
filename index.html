@@ -633,6 +633,7 @@
           <button class="cta ghost" data-crmf="servicos" data-en="Services">Serviços</button>
           <button class="cta ghost" data-crmf="bicicletas" data-en="Bicycles">Bicicletas</button>
         </div>
+        <div id="crmRelancar" class="hidden" style="background:var(--card2);border-radius:var(--r-sm);padding:12px 15px;margin:0 0 14px;font-size:13px"></div>
         <div class="kpis" id="crmTop"></div>
         <div id="crmEquipaBici" class="hidden" style="background:var(--card2);border-radius:var(--r-sm);padding:12px 15px;margin:0 0 14px;font-size:12.5px"></div>
         <div id="crmGrid" class="crmgrid"></div>
@@ -1038,7 +1039,7 @@ function aplicarPack(p){
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
   Object.values(S.semanal).forEach(sr=>{if(!sr._notaRica){sr.nota=htmlSeguro(sr.nota);sr._notaRica=true}else sr.nota=normRico(sr.nota)});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
-    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
+    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';normCrmInter(c);
     c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado);if(r.justificacao===undefined)r.justificacao=''})});
   M.atas.forEach(a=>{if(a.topicoId===undefined)a.topicoId='';if(!a._rico){a.corpo=htmlSeguro(a.corpo);a._rico=true}else a.corpo=normRico(a.corpo)});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
@@ -1356,7 +1357,7 @@ async function load(){
   S.topicos.forEach(t=>{if(t.nota===undefined)t.nota=''});
   Object.values(S.semanal).forEach(sr=>{if(!sr._notaRica){sr.nota=htmlSeguro(sr.nota);sr._notaRica=true}else sr.nota=normRico(sr.nota)});
   S.crm.forEach(c=>{if(!Array.isArray(c.contactos))c.contactos=[];if(!c.ultimoContacto)c.ultimoContacto={data:'',canal:'',assunto:''};
-    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';
+    if(!Array.isArray(c.rfqs))c.rfqs=[];if(!Array.isArray(c.topicoIds))c.topicoIds=[];if(c.departamento===undefined)c.departamento='';normCrmInter(c);
     c.rfqs.forEach(r=>{r.estado=estadoRfq(r.estado);if(r.justificacao===undefined)r.justificacao=''})});
   Object.values(S.dias).forEach(d=>{d.rit=d.rit||[];while(d.rit.length<4)d.rit.push(false)});
   let m=await jget(K_MOM);if(!m)m=await jget(K_OLDM);
@@ -1944,6 +1945,98 @@ function crmLista(){
   return S.crm.filter(c=>crmFiltro==='todos'||c.dominio===crmFiltro);
 }
 function crmRfqTotal(c){return (c.rfqs||[]).reduce((s,r)=>s+(+r.valor||0),0)}
+function normCrmInter(c){
+  if(!Array.isArray(c.interacoes))c.interacoes=[];
+  if(!c.proxima||typeof c.proxima!=='object')c.proxima={texto:'',data:''};
+  const u=c.ultimoContacto;
+  if(!c.interacoes.length&&u&&u.data)
+    c.interacoes.push({id:'im'+c.id,data:u.data,canal:u.canal||'',resumo:u.assunto||'',doc:'',sentido:''});
+}
+const crmHistAberto=new Set();
+const interOrdenadas=c=>[...(c.interacoes||[])].sort((a,b)=>a.data<b.data?1:a.data>b.data?-1:(a.id<b.id?1:-1));
+function crmRelances(lista){
+  const hoje=today(),r={atrasadas:[],semana:[],sem:[]};
+  lista.forEach(c=>{
+    const p=c.proxima||{};
+    if(!p.data)r.sem.push(c);
+    else if(p.data<hoje)r.atrasadas.push(c);
+    else if(dcount(p.data,hoje)<=7)r.semana.push(c);
+  });
+  const po=(a,b)=>a.proxima.data<b.proxima.data?-1:a.proxima.data>b.proxima.data?1:0;
+  r.atrasadas.sort(po);r.semana.sort(po);
+  return r;
+}
+function crmInteracao(c,ent){
+  normCrmInter(c);
+  const host=document.getElementById('crmEditorHost');
+  host.innerHTML='<h2>'+(ent?'Editar interação':'Registar interação')+', '+esc(c.nome)+'</h2>'+
+    '<div class="grid3"><div><label class="f">Data</label><input type="date" id="ciData"></div>'+
+    '<div><label class="f">Canal</label><select id="ciCanal"><option value="">—</option>'+Object.entries(CANAL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
+    '<div><label class="f">Com quem</label><input type="text" id="ciQuem" placeholder="Nome"></div></div>'+
+    '<div style="margin-top:10px"><label class="f">O que se disse</label><textarea id="ciResumo" style="min-height:90px"></textarea></div>'+
+    '<div class="grid2" style="margin-top:10px"><div><label class="f">Documento trocado, opcional</label><input type="text" id="ciDoc" placeholder="NDA, plano 3D, cotação..."></div>'+
+    '<div><label class="f">Enviado ou recebido</label><select id="ciSent"><option value="">—</option><option value="enviado">Enviado</option><option value="recebido">Recebido</option></select></div></div>'+
+    (ent?'':'<div class="grid2" style="margin-top:10px"><div><label class="f">Próxima ação</label><input type="text" id="ciProx" placeholder="Ex: ligar para saber do teste"></div>'+
+    '<div><label class="f">Data de relance</label><input type="date" id="ciProxData"></div></div>'+
+    '<div class="quick" id="ciQuick" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>')+
+    '<div class="btnrow"><button class="cta" id="ciOk">Guardar</button><button class="cta ghost" id="ciNo">Cancelar</button></div>';
+  const g=id=>host.querySelector('#'+id);
+  g('ciData').value=ent?ent.data:today();
+  g('ciCanal').value=ent?ent.canal||'':'';
+  g('ciQuem').value=ent?ent.quem||'':'';
+  g('ciResumo').value=ent?ent.resumo||'':'';
+  g('ciDoc').value=ent?ent.doc||'':'';
+  g('ciSent').value=ent?ent.sentido||'':'';
+  if(!ent){
+    g('ciProx').value=(c.proxima&&c.proxima.texto)||'';
+    g('ciProxData').value=(c.proxima&&c.proxima.data)||'';
+    [['amanhã',1],['daqui a 3 dias',3],['1 semana',7],['2 semanas',14],['1 mês',30]].forEach(([l,n])=>{
+      const b=document.createElement('button');b.type='button';b.className='cta ghost';b.style.cssText='padding:3px 10px;font-size:12px';
+      b.textContent=l;b.onclick=()=>{g('ciProxData').value=addDays(today(),n)};g('ciQuick').appendChild(b)});
+  }
+  g('ciNo').onclick=()=>{host.innerHTML=''};
+  g('ciOk').onclick=()=>{
+    const data=g('ciData').value||today();
+    const resumo=g('ciResumo').value.trim();
+    if(!resumo&&!g('ciDoc').value.trim()){g('ciResumo').focus();return}
+    const o={data,canal:g('ciCanal').value,quem:g('ciQuem').value.trim(),resumo,doc:g('ciDoc').value.trim(),sentido:g('ciSent').value};
+    if(ent)Object.assign(ent,o);else c.interacoes.push(Object.assign({id:'i'+Date.now()},o));
+    const ult=interOrdenadas(c)[0];
+    if(ult)c.ultimoContacto={canal:ult.canal,data:ult.data,assunto:(ult.resumo||'').slice(0,80)};
+    if(!ent){
+      const pt=g('ciProx').value.trim(),pd=g('ciProxData').value;
+      c.proxima={texto:pt,data:pd};
+    }
+    save();host.innerHTML='';renderAll();
+  };
+  host.scrollIntoView({block:'center'});
+  g('ciResumo').focus();
+}
+function renderCrmRelancar(l){
+  const el=document.getElementById('crmRelancar');
+  if(!l.length){el.classList.add('hidden');return}
+  const r=crmRelances(l);
+  el.classList.remove('hidden');
+  el.innerHTML='<b>Quem relançar</b> <span style="color:var(--steel)">— '+r.atrasadas.length+' em atraso, '+r.semana.length+' esta semana, '+r.sem.length+' sem próxima ação</span>';
+  const linha=(c,cls)=>{
+    const d=document.createElement('div');d.style.cssText='display:flex;gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line);cursor:pointer;flex-wrap:wrap';
+    const dias=dcount(c.proxima.data,today());
+    const q=dias<0?'há '+(-dias)+(dias===-1?' dia':' dias'):dias===0?'hoje':dias===1?'amanhã':'em '+dias+' dias';
+    d.innerHTML='<b style="min-width:120px">'+esc(c.nome)+'</b><span style="flex:1;min-width:140px">'+esc(c.proxima.texto||'Relançar')+'</span>'+
+      '<span class="depbadge" style="background:'+(cls==='late'?'var(--warn-bg,#F4DDD6)':'#F6E6CC')+';color:'+(cls==='late'?'var(--warn)':'var(--soon)')+'">'+esc(c.proxima.data)+', '+q+'</span>';
+    d.onclick=()=>crmInteracao(c);return d};
+  const lst=document.createElement('div');lst.style.marginTop='6px';
+  r.atrasadas.forEach(c=>lst.appendChild(linha(c,'late')));
+  r.semana.forEach(c=>lst.appendChild(linha(c,'soon')));
+  el.appendChild(lst);
+  if(r.sem.length){
+    const s=document.createElement('div');s.style.cssText='margin-top:8px;padding-top:6px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;align-items:center';
+    s.innerHTML='<span style="color:var(--steel)">Sem próxima ação:</span>';
+    r.sem.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='chip';b.style.cssText='border:0;cursor:pointer;font:inherit;font-size:12px';
+      b.textContent=c.nome;b.onclick=()=>crmInteracao(c);s.appendChild(b)});
+    el.appendChild(s);
+  }
+}
 const CRM_VISIVEIS=3;
 const crmAbertos=new Set();
 const crmRfqsAbertas=new Set();
@@ -1979,6 +2072,37 @@ function crmCardEl(c){
     ? 'Último contacto: <b>'+(CANAL[uc.canal]||uc.canal||'')+'</b>, '+esc(uc.data)+(uc.assunto?' — '+esc(uc.assunto):'')
     : 'Sem registo de último contacto.';
   d.appendChild(u);
+  const px=c.proxima||{},pl=document.createElement('div');pl.className='ultimo';
+  if(px.texto||px.data){
+    const atras=px.data&&px.data<today();
+    pl.innerHTML='Próxima: <b'+(atras?' style="color:var(--warn)"':'')+'>'+esc(px.texto||'Relançar')+'</b>'+(px.data?', '+esc(px.data)+(atras?' (em atraso)':''):'')+' ';
+    const feita=document.createElement('button');feita.className='x';feita.type='button';feita.textContent='feita';
+    feita.style.cssText='font-size:11px;border:1px solid var(--line);border-radius:9px;padding:1px 8px;margin-left:4px;color:var(--navy)';
+    feita.onclick=ev=>{ev.stopPropagation();c.proxima={texto:'',data:''};save();renderAll()};
+    pl.appendChild(feita);
+  } else pl.innerHTML='<span style="color:var(--steel)">Sem próxima ação.</span>';
+  d.appendChild(pl);
+  const ints=interOrdenadas(c);
+  if(ints.length){
+    const hb=document.createElement('button');hb.className='x';hb.type='button';
+    hb.style.cssText='font-size:12.5px;color:var(--navy);margin-top:6px;padding:2px 0;display:flex;gap:5px;font-weight:600';
+    const hl=document.createElement('div');hl.style.cssText='border-left:2px solid var(--line);margin:6px 0 0 4px;padding-left:10px;font-size:12.5px';
+    const pintaH=ab=>{hb.innerHTML='<span style="display:inline-block;transition:transform .15s;transform:rotate('+(ab?90:0)+'deg)">▸</span> Interações ('+ints.length+')';hl.style.display=ab?'':'none'};
+    ints.forEach(i=>{
+      const row=document.createElement('div');row.style.cssText='padding:4px 0;border-bottom:1px dashed var(--line)';
+      row.innerHTML='<b>'+esc(i.data)+'</b> <span style="color:var(--steel)">'+esc((CANAL[i.canal]||i.canal||'')+(i.quem?', '+i.quem:''))+'</span><div style="white-space:pre-wrap">'+esc(i.resumo||'')+'</div>'+
+        (i.doc?'<div style="color:var(--steel)">📎 '+esc(i.doc)+(i.sentido?' ('+i.sentido+')':'')+'</div>':'');
+      const ed=document.createElement('button');ed.className='x';ed.type='button';ed.textContent='editar';ed.style.cssText='font-size:11px;margin-right:6px';
+      ed.onclick=ev=>{ev.stopPropagation();crmInteracao(c,i)};
+      const dl=document.createElement('button');dl.className='x';dl.type='button';dl.textContent='apagar';dl.style.cssText='font-size:11px';
+      dl.onclick=ev=>{ev.stopPropagation();if(confirm('Apagar esta interação?')){c.interacoes=c.interacoes.filter(z=>z!==i);
+        const ul=interOrdenadas(c)[0];c.ultimoContacto=ul?{canal:ul.canal,data:ul.data,assunto:(ul.resumo||'').slice(0,80)}:{data:'',canal:'',assunto:''};save();renderAll()}};
+      row.append(ed,dl);hl.appendChild(row);
+    });
+    pintaH(crmHistAberto.has(c.id));
+    hb.onclick=ev=>{ev.stopPropagation();const ab=!crmHistAberto.has(c.id);if(ab)crmHistAberto.add(c.id);else crmHistAberto.delete(c.id);pintaH(ab)};
+    d.append(hb,hl);
+  }
   if((c.rfqs||[]).length){
     const rb=document.createElement('div');rb.className='rfqs';
     const ordenadas=[...c.rfqs].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1);
@@ -2051,11 +2175,12 @@ function crmCardEl(c){
     d.appendChild(lg);
   }
   const acts=document.createElement('div');acts.className='acts';
+  const bi=document.createElement('button');bi.textContent='Registar interação';bi.onclick=()=>crmInteracao(c);
   const b=document.createElement('button');b.textContent='Editar CRM';b.onclick=()=>crmEdit(c);
   const del=document.createElement('button');del.textContent='Eliminar';
   del.onclick=()=>{if(confirm('Eliminar "'+c.nome+'" do CRM? Os tópicos e tarefas ligados não são apagados, só deixam de estar ligados aqui.')){
     S.crm=S.crm.filter(x=>x.id!==c.id);save();renderAll()}};
-  acts.append(b,del);d.appendChild(acts);
+  acts.append(bi,b,del);d.appendChild(acts);
   return d;
 }
 function crmMensal(lista){
@@ -2099,6 +2224,7 @@ function renderCRM(){
   document.querySelectorAll('#crmFiltros button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.crmf===crmFiltro));
   renderEquipaBici();
   const l=crmLista();
+  renderCrmRelancar(l);
   document.getElementById('crmC').textContent=l.length;
   const totV=l.reduce((s,c)=>s+crmRfqTotal(c),0);
   const totR=l.reduce((s,c)=>s+(c.rfqs||[]).length,0);
@@ -2214,11 +2340,16 @@ function renderMoms(){
   renderSeries();
 }
 function renderBell(){
-  const late=atrasadas(),soon=aVencer(3),n=late.length+soon.length;
-  document.getElementById('bell').className=late.length?'hot':'';
+  const late=atrasadas(),soon=aVencer(3);
+  const crmAtr=S.crm.filter(c=>c.proxima&&c.proxima.data&&c.proxima.data<today()).sort((a,b)=>a.proxima.data<b.proxima.data?-1:1);
+  const n=late.length+soon.length+crmAtr.length;
+  document.getElementById('bell').className=(late.length||crmAtr.length)?'hot':'';
   document.getElementById('bellN').textContent=n;
   const p=document.getElementById('bellPanel');p.innerHTML='';
   if(!n){p.innerHTML='<div class="b">Nada fora de prazo nem a vencer nos próximos três dias.</div>';return}
+  crmAtr.forEach(c=>{const d=document.createElement('div');d.className='b late';
+    d.innerHTML='Relançar '+esc(c.nome)+(c.proxima.texto?': '+esc(c.proxima.texto):'')+'<small>CRM, relance a '+esc(c.proxima.data)+'</small>';
+    d.onclick=()=>{p.classList.add('hidden');crmFiltro='todos';go('crm');renderAll()};p.appendChild(d)});
   const add=(t,cls)=>{const d=document.createElement('div');d.className='b '+cls;
     d.innerHTML=esc(t.texto)+'<small>'+(cls==='late'?dueTxt(t).s+', prazo '+t.prazo:'vence '+dueTxt(t).s)+'</small>';
     d.onclick=()=>{const dt=new Date(t.prazo+'T00:00');viewDate=dt;calY=dt.getFullYear();calM=dt.getMonth();
