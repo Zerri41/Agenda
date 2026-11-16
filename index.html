@@ -632,10 +632,17 @@
           <button class="cta ghost" data-crmf="todos" data-en="All">Todos</button>
           <button class="cta ghost" data-crmf="servicos" data-en="Services">Serviços</button>
           <button class="cta ghost" data-crmf="bicicletas" data-en="Bicycles">Bicicletas</button>
+          <select id="crmOrd" aria-label="Ordenar cartões" style="margin-left:auto">
+            <option value="rfq">Ordenar: valor de RFQs</option>
+            <option value="parados">Ordenar: sem contacto há mais tempo</option>
+            <option value="prior">Ordenar: prioridade e etapa</option>
+            <option value="nome">Ordenar: nome</option>
+          </select>
         </div>
         <div id="crmRelancar" class="hidden" style="background:var(--card2);border-radius:var(--r-sm);padding:12px 15px;margin:0 0 14px;font-size:13px"></div>
         <div class="kpis" id="crmTop"></div>
         <div id="crmEquipaBici" class="hidden" style="background:var(--card2);border-radius:var(--r-sm);padding:12px 15px;margin:0 0 14px;font-size:12.5px"></div>
+        <div id="crmProdutos" class="hidden" style="background:var(--card2);border-radius:var(--r-sm);padding:12px 15px;margin:0 0 14px;font-size:12.5px"></div>
         <div id="crmGrid" class="crmgrid"></div>
       </div>
       <div class="panel" id="crmMesHost"></div>
@@ -1941,6 +1948,17 @@ function estadoRfq(v){v=(v||'').toLowerCase().trim();
   if(v.includes('equipa')||v.includes('team'))return'aguarda_equipa';
   if(v.includes('cliente')||v.includes('client'))return'aguarda_cliente';
   return'recebida'}
+const CRM_ETAPAS=['1 - Identificado','2 - Reunião pedida','3 - Reunião / qualificação','4 - Teste em curso','5 - Cotação enviada','6 - Negociação','7 - Cliente ativo','8 - Perdido','9 - Em espera'];
+const CRM_PRIOR={A:'A - Quente',B:'B - Morno',C:'C - Frio'};
+const CRM_ORIGENS=['Feira','LinkedIn','Recomendação','Cluster AED','Contacto entrante','Prospeção direta','Outra'];
+const CRM_ALERTA_LARANJA=45,CRM_ALERTA_VERMELHO=90;
+let crmOrd='rfq';
+const crmPriorRank=c=>({A:0,B:1,C:2})[c.prioridade]??3;
+const crmEtapaNum=c=>parseInt((c.etapa||'').slice(0,1),10)||0;
+const crmPerdido=c=>crmEtapaNum(c)===8;
+function crmDiasSemContacto(c){const d=c.ultimoContacto&&c.ultimoContacto.data;return d?Math.max(0,dcount(today(),d)):null}
+function crmCorDias(n){return n===null?'var(--steel)':n>=CRM_ALERTA_VERMELHO?'var(--warn)':n>=CRM_ALERTA_LARANJA?'#C77A12':'var(--steel)'}
+function crmProdutosDe(c){return Array.isArray(c.produtos)?c.produtos:[]}
 function crmLista(){
   return S.crm.filter(c=>crmFiltro==='todos'||c.dominio===crmFiltro);
 }
@@ -1955,15 +1973,21 @@ function normCrmInter(c){
 const crmHistAberto=new Set();
 const interOrdenadas=c=>[...(c.interacoes||[])].sort((a,b)=>a.data<b.data?1:a.data>b.data?-1:(a.id<b.id?1:-1));
 function crmRelances(lista){
-  const hoje=today(),r={atrasadas:[],semana:[],sem:[]};
+  const hoje=today(),r={atrasadas:[],semana:[],sem:[],parados:[]};
   lista.forEach(c=>{
+    if(crmPerdido(c))return;
     const p=c.proxima||{};
     if(!p.data)r.sem.push(c);
     else if(p.data<hoje)r.atrasadas.push(c);
     else if(dcount(p.data,hoje)<=7)r.semana.push(c);
+    const dias=crmDiasSemContacto(c);
+    if(dias===null||dias>=CRM_ALERTA_LARANJA)r.parados.push(c);
   });
-  const po=(a,b)=>a.proxima.data<b.proxima.data?-1:a.proxima.data>b.proxima.data?1:0;
+  const po=(a,b)=>crmPriorRank(a)-crmPriorRank(b)||(a.proxima.data<b.proxima.data?-1:a.proxima.data>b.proxima.data?1:0)||crmEtapaNum(b)-crmEtapaNum(a);
   r.atrasadas.sort(po);r.semana.sort(po);
+  r.sem.sort((a,b)=>crmPriorRank(a)-crmPriorRank(b)||crmEtapaNum(b)-crmEtapaNum(a));
+  const dd=c=>{const n=crmDiasSemContacto(c);return n===null?1e6:n};
+  r.parados.sort((a,b)=>dd(b)-dd(a)||crmPriorRank(a)-crmPriorRank(b));
   return r;
 }
 function crmInteracao(c,ent){
@@ -2036,6 +2060,19 @@ function renderCrmRelancar(l){
       b.textContent=c.nome;b.onclick=()=>crmInteracao(c);s.appendChild(b)});
     el.appendChild(s);
   }
+  if(r.parados.length){
+    const pb=document.createElement('div');pb.style.cssText='margin-top:8px;padding-top:6px;border-top:1px solid var(--line)';
+    pb.innerHTML='<b>Sem contacto há mais tempo</b> <span style="color:var(--steel)">— '+r.parados.length+' com '+CRM_ALERTA_LARANJA+' dias ou mais, ou sem nenhum contacto registado</span>';
+    r.parados.slice(0,8).forEach(c=>{
+      const n=crmDiasSemContacto(c),d=document.createElement('div');
+      d.style.cssText='display:flex;gap:8px;align-items:baseline;padding:4px 0;cursor:pointer;flex-wrap:wrap';
+      d.innerHTML='<b style="min-width:120px">'+esc(c.nome)+'</b>'+
+        '<span style="flex:1;min-width:140px;color:var(--steel)">'+(c.prioridade?esc(CRM_PRIOR[c.prioridade])+' · ':'')+esc(c.etapa||'sem etapa')+'</span>'+
+        '<span style="color:'+crmCorDias(n)+';font-weight:600">'+(n===null?'sem contacto registado':'há '+n+' dias')+'</span>';
+      d.onclick=()=>crmInteracao(c);pb.appendChild(d)});
+    if(r.parados.length>8){const m=document.createElement('div');m.style.cssText='color:var(--steel);font-size:12px';m.textContent='… e mais '+(r.parados.length-8)+'. Ordena os cartões por "Sem contacto há mais tempo" para os ver todos.';pb.appendChild(m)}
+    el.appendChild(pb);
+  }
 }
 const CRM_VISIVEIS=3;
 const crmAbertos=new Set();
@@ -2049,13 +2086,18 @@ function crmCardEl(c){
   d.innerHTML='<div class="head"><span class="t">'+esc(c.nome)+'</span>'+
     '<span class="tag '+c.dominio+'">'+DOM[c.dominio]+'</span>'+
     (c.departamento?'<span class="depbadge" style="background:'+crmDeptBg(c.departamento)+';color:'+crmDeptFg(c.departamento)+'">'+esc(c.departamento)+'</span>':'')+
+    (c.prioridade&&CRM_PRIOR[c.prioridade]?'<span class="depbadge" style="background:'+({A:'#F4DDD6',B:'#F6E6CC',C:'#E1E9F0'})[c.prioridade]+'">'+esc(CRM_PRIOR[c.prioridade])+'</span>':'')+
     '</div>'+
+    ((c.etapa||crmProdutosDe(c).length||c.origem)?'<div class="ultimo" style="margin-top:6px">'+
+      (c.etapa?'Etapa: <b>'+esc(c.etapa)+'</b>':'')+
+      (crmProdutosDe(c).length?(c.etapa?' · ':'')+'Interesse: <b>'+esc(crmProdutosDe(c).join(', '))+'</b>':'')+
+      (c.origem?((c.etapa||crmProdutosDe(c).length)?' · ':'')+'Origem: '+esc(c.origem):'')+'</div>':'')+
     '<div class="stats"><div><b>'+eur(crmRfqTotal(c))+'</b>valor total RFQ</div>'+
     '<div><b>'+(c.rfqs||[]).length+'</b>RFQs recebidas</div></div>';
   if(c.contactos.length){
     const co=document.createElement('div');co.className='contactos';
     c.contactos.forEach((p,i)=>{
-      const bits=[esc(p.nome)];if(p.cargo)bits.push(esc(p.cargo));
+      const bits=[esc(p.nome)];if(p.cargo)bits.push(esc(p.cargo));if(p.papel)bits.push('<i>'+esc(p.papel)+'</i>');
       let linha=bits.join(', ');
       if(p.email)linha+=' · <a href="mailto:'+esc(p.email)+'">'+esc(p.email)+'</a>';
       if(p.telefone)linha+=' · <a href="tel:'+esc(p.telefone)+'">'+esc(p.telefone)+'</a>';
@@ -2069,8 +2111,9 @@ function crmCardEl(c){
   const uc=c.ultimoContacto;
   const u=document.createElement('div');u.className='ultimo';
   u.innerHTML=(uc&&uc.data)
-    ? 'Último contacto: <b>'+(CANAL[uc.canal]||uc.canal||'')+'</b>, '+esc(uc.data)+(uc.assunto?' — '+esc(uc.assunto):'')
-    : 'Sem registo de último contacto.';
+    ? 'Último contacto: <b>'+(CANAL[uc.canal]||uc.canal||'')+'</b>, '+esc(uc.data)+
+      ' <b style="color:'+crmCorDias(crmDiasSemContacto(c))+'">('+(crmDiasSemContacto(c)===0?'hoje':'há '+crmDiasSemContacto(c)+' dias')+')</b>'+(uc.assunto?' — '+esc(uc.assunto):'')
+    : '<span style="color:var(--warn)">Sem registo de último contacto.</span>';
   d.appendChild(u);
   const px=c.proxima||{},pl=document.createElement('div');pl.className='ultimo';
   if(px.texto||px.data){
@@ -2225,6 +2268,8 @@ function renderCRM(){
   renderEquipaBici();
   const l=crmLista();
   renderCrmRelancar(l);
+  renderCrmProdutos(l);
+  document.getElementById('crmOrd').value=crmOrd;
   document.getElementById('crmC').textContent=l.length;
   const totV=l.reduce((s,c)=>s+crmRfqTotal(c),0);
   const totR=l.reduce((s,c)=>s+(c.rfqs||[]).length,0);
@@ -2233,7 +2278,41 @@ function renderCRM(){
   top.children[1].onclick=()=>crmMensal(l);
   const grid=document.getElementById('crmGrid');grid.innerHTML='';
   if(!l.length){grid.innerHTML='<p class="empty">Sem clientes neste filtro. Cria um no formulário em baixo.</p>';return}
-  l.sort((a,b)=>crmRfqTotal(b)-crmRfqTotal(a)).forEach(c=>grid.appendChild(crmCardEl(c)));
+  const dd=c=>{const n=crmDiasSemContacto(c);return n===null?1e6:n};
+  const ord={
+    rfq:(a,b)=>crmRfqTotal(b)-crmRfqTotal(a),
+    parados:(a,b)=>(crmPerdido(a)-crmPerdido(b))||dd(b)-dd(a),
+    prior:(a,b)=>(crmPerdido(a)-crmPerdido(b))||crmPriorRank(a)-crmPriorRank(b)||crmEtapaNum(b)-crmEtapaNum(a),
+    nome:(a,b)=>a.nome.localeCompare(b.nome,'pt')
+  }[crmOrd]||((a,b)=>0);
+  l.sort(ord).forEach(c=>grid.appendChild(crmCardEl(c)));
+}
+function renderCrmProdutos(l){
+  const el=document.getElementById('crmProdutos');
+  const mapa={};
+  l.forEach(c=>crmProdutosDe(c).forEach(p=>{
+    const m=mapa[p]=mapa[p]||{clientes:[],etapas:{},abertas:0,valorAberto:0,ganho:0};
+    m.clientes.push(c.nome);
+    const e=c.etapa||'Sem etapa';m.etapas[e]=(m.etapas[e]||0)+1;
+    (c.rfqs||[]).forEach(r=>{
+      if(!(r.descricao||'').toLowerCase().includes(p.toLowerCase()))return;
+      const est=estadoRfq(r.estado);
+      if(RFQ_ABERTAS_ESTADOS.includes(est)){m.abertas++;m.valorAberto+=+r.valor||0}
+      else if(est==='ganha')m.ganho+=+r.valor||0;
+    });
+  }));
+  const nomes=Object.keys(mapa).sort((a,b)=>mapa[b].clientes.length-mapa[a].clientes.length||a.localeCompare(b,'pt'));
+  if(!nomes.length){el.classList.add('hidden');return}
+  el.classList.remove('hidden');
+  el.innerHTML='<b>Estado por produto / serviço</b> <span style="color:var(--steel)">— clientes por etapa e RFQs cuja descrição contém o nome do produto</span>'+
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;margin-top:6px"><thead><tr style="text-align:left;color:var(--steel)">'+
+    '<th style="padding:4px 8px 4px 0">Produto / serviço</th><th>Clientes</th><th>Por etapa</th><th>RFQs abertas</th><th>Ganho</th></tr></thead><tbody>'+
+    nomes.map(p=>{const m=mapa[p];
+      return '<tr style="border-top:1px solid var(--line);vertical-align:top"><td style="padding:5px 8px 5px 0"><b>'+esc(p)+'</b></td>'+
+        '<td title="'+esc(m.clientes.join(', '))+'">'+m.clientes.length+'</td>'+
+        '<td>'+Object.entries(m.etapas).sort().map(([e,n])=>esc(e)+': '+n).join('<br>')+'</td>'+
+        '<td>'+m.abertas+(m.abertas?' ('+eur(m.valorAberto)+')':'')+'</td><td>'+(m.ganho?eur(m.ganho):'—')+'</td></tr>'}).join('')+
+    '</tbody></table></div>';
 }
 function crmRefreshLinked(c,host){
   const box=host.querySelector('#crmTopLinked');
@@ -2266,8 +2345,14 @@ function crmEdit(c){
     '<div class="grid2"><div><label class="f">Nome do cliente</label><input type="text" id="crmNome"></div>'+
     '<div><label class="f">Domínio</label><select id="crmDom"><option value="servicos">Serviços</option><option value="bicicletas">Bicicletas</option><option value="diversos">Diversos e institucional</option></select></div></div>'+
     '<div style="margin-top:10px"><label class="f">Departamento a trabalhar nisto, texto livre</label><input type="text" id="crmDept" placeholder="ex: Industrialização"></div>'+
-    '<div style="margin-top:10px"><label class="f">Contactos, um por linha. Formato: nome | cargo | email | telefone</label>'+
-    '<textarea id="crmContactos" class="mono" style="min-height:70px" placeholder="Ana Silva | Compras | ana@cliente.pt | 912345678"></textarea></div>'+
+    '<div class="grid3" style="margin-top:10px">'+
+    '<div><label class="f">Etapa do funil</label><select id="crmEtapa"><option value="">—</option>'+CRM_ETAPAS.map(e=>'<option>'+e+'</option>').join('')+'</select></div>'+
+    '<div><label class="f">Prioridade</label><select id="crmPrior"><option value="">—</option>'+Object.entries(CRM_PRIOR).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
+    '<div><label class="f">Origem do contacto</label><select id="crmOrigem"><option value="">—</option>'+CRM_ORIGENS.map(e=>'<option>'+e+'</option>').join('')+'</select></div></div>'+
+    '<div style="margin-top:10px"><label class="f">Produtos / serviços de interesse, separados por vírgula</label><input type="text" id="crmProdutos" list="crmProdutosLista" placeholder="ex: M2300, Ensaios de laboratório">'+
+    '<datalist id="crmProdutosLista">'+[...new Set(S.crm.flatMap(crmProdutosDe))].sort().map(p=>'<option value="'+esc(p)+'">').join('')+'</datalist></div>'+
+    '<div style="margin-top:10px"><label class="f">Contactos, um por linha. Formato: nome | cargo | email | telefone | papel na decisão (decisor, comprador, prescritor técnico, utilizador, influenciador)</label>'+
+    '<textarea id="crmContactos" class="mono" style="min-height:70px" placeholder="Ana Silva | Compras | ana@cliente.pt | 912345678 | comprador"></textarea></div>'+
     '<div class="grid3" style="margin-top:10px">'+
     '<div><label class="f">Último contacto, canal</label><select id="crmCanal"><option value="">—</option>'+
     Object.entries(CANAL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div>'+
@@ -2282,7 +2367,11 @@ function crmEdit(c){
   host.querySelector('#crmNome').value=c.nome;
   host.querySelector('#crmDom').value=c.dominio;
   host.querySelector('#crmDept').value=c.departamento||'';
-  host.querySelector('#crmContactos').value=(c.contactos||[]).map(p=>[p.nome,p.cargo,p.email,p.telefone].join(' | ')).join('\n');
+  host.querySelector('#crmEtapa').value=c.etapa||'';
+  host.querySelector('#crmPrior').value=c.prioridade||'';
+  host.querySelector('#crmOrigem').value=c.origem||'';
+  host.querySelector('#crmProdutos').value=crmProdutosDe(c).join(', ');
+  host.querySelector('#crmContactos').value=(c.contactos||[]).map(p=>[p.nome,p.cargo,p.email,p.telefone,p.papel||''].join(' | ')).join('\n');
   host.querySelector('#crmCanal').value=c.ultimoContacto.canal||'';
   host.querySelector('#crmData').value=c.ultimoContacto.data||'';
   host.querySelector('#crmAssunto').value=c.ultimoContacto.assunto||'';
@@ -2301,9 +2390,13 @@ function crmEdit(c){
     c.nome=nome;
     c.dominio=host.querySelector('#crmDom').value;
     c.departamento=host.querySelector('#crmDept').value.trim();
+    c.etapa=host.querySelector('#crmEtapa').value;
+    c.prioridade=host.querySelector('#crmPrior').value;
+    c.origem=host.querySelector('#crmOrigem').value;
+    c.produtos=host.querySelector('#crmProdutos').value.split(',').map(s=>s.trim()).filter(Boolean);
     c.contactos=host.querySelector('#crmContactos').value.split('\n').map(s=>s.trim()).filter(Boolean).map(l=>{
-      const[cn,cargo,email,telefone]=l.split('|').map(s=>(s||'').trim());
-      return{nome:cn||'',cargo:cargo||'',email:email||'',telefone:telefone||''};
+      const[cn,cargo,email,telefone,papel]=l.split('|').map(s=>(s||'').trim());
+      return{nome:cn||'',cargo:cargo||'',email:email||'',telefone:telefone||'',papel:papel||''};
     });
     c.ultimoContacto={canal:host.querySelector('#crmCanal').value,data:host.querySelector('#crmData').value,
       assunto:host.querySelector('#crmAssunto').value.trim()};
@@ -2322,11 +2415,12 @@ function crmEdit(c){
   host.scrollIntoView({block:'center'});
 }
 document.querySelectorAll('#crmFiltros button').forEach(b=>b.onclick=()=>{crmFiltro=b.dataset.crmf;renderCRM()});
+document.getElementById('crmOrd').onchange=e=>{crmOrd=e.target.value;renderCRM()};
 document.getElementById('ncAdd').onclick=()=>{
   const inp=document.getElementById('ncNome');
   const nome=inp.value.trim();if(!nome)return;
   const dom=document.getElementById('ncDom').value;
-  S.crm.push({id:'c'+Date.now(),nome,dominio:dom,departamento:'',contactos:[],
+  S.crm.push({id:'c'+Date.now(),nome,dominio:dom,departamento:'',etapa:CRM_ETAPAS[0],prioridade:'',origem:'',produtos:[],contactos:[],
     ultimoContacto:{data:'',canal:'',assunto:''},rfqs:[],topicoIds:[]});
   inp.value='';save();renderAll();
 };
