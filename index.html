@@ -165,6 +165,8 @@
   .crmcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--cS);padding:13px 15px}
   .crmcard.bicicletas{border-top-color:var(--cB)}
   .crmcard.diversos{border-top-color:var(--cD)}
+  .crmcard.perdido{filter:grayscale(1);opacity:.55;border-top-color:var(--line)}
+  .crmcard.perdido:hover{opacity:.85}
   .crmcard .head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
   .crmcard .t{font-weight:600;flex:1;min-width:140px}
   .crmcard .stats{display:flex;gap:14px;margin:9px 0;font-size:12.5px;color:var(--steel)}
@@ -1956,13 +1958,17 @@ let crmOrd='rfq';
 const crmPriorRank=c=>({A:0,B:1,C:2})[c.prioridade]??3;
 const crmEtapaNum=c=>parseInt((c.etapa||'').slice(0,1),10)||0;
 const crmPerdido=c=>crmEtapaNum(c)===8;
+const CRM_MOTIVOS=['Preço','Prazo de entrega','Requisitos técnicos / qualidade','Escolheu concorrente','Sem resposta do cliente','Projeto cancelado ou adiado','Outro'];
+const crmRelancavel=c=>!crmPerdido(c)||(c.fecho&&c.fecho.manter==='sim');
 function crmDiasSemContacto(c){const d=c.ultimoContacto&&c.ultimoContacto.data;return d?Math.max(0,dcount(today(),d)):null}
 function crmCorDias(n){return n===null?'var(--steel)':n>=CRM_ALERTA_VERMELHO?'var(--warn)':n>=CRM_ALERTA_LARANJA?'#C77A12':'var(--steel)'}
 function crmProdutosDe(c){return Array.isArray(c.produtos)?c.produtos:[]}
 function crmLista(){
   return S.crm.filter(c=>crmFiltro==='todos'||c.dominio===crmFiltro);
 }
-function crmRfqTotal(c){return (c.rfqs||[]).reduce((s,r)=>s+(+r.valor||0),0)}
+const crmRfqMorta=r=>ESTADOS_COM_JUSTIFICACAO.includes(estadoRfq(r.estado));
+function crmRfqTotal(c){return (c.rfqs||[]).reduce((s,r)=>crmRfqMorta(r)?s:s+(+r.valor||0),0)}
+function crmRfqPerdido(c){return (c.rfqs||[]).reduce((s,r)=>crmRfqMorta(r)?s+(+r.valor||0):s,0)}
 function normCrmInter(c){
   if(!Array.isArray(c.interacoes))c.interacoes=[];
   if(!c.proxima||typeof c.proxima!=='object')c.proxima={texto:'',data:''};
@@ -1975,7 +1981,7 @@ const interOrdenadas=c=>[...(c.interacoes||[])].sort((a,b)=>a.data<b.data?1:a.da
 function crmRelances(lista){
   const hoje=today(),r={atrasadas:[],semana:[],sem:[],parados:[]};
   lista.forEach(c=>{
-    if(crmPerdido(c))return;
+    if(!crmRelancavel(c))return;
     const p=c.proxima||{};
     if(!p.data)r.sem.push(c);
     else if(p.data<hoje)r.atrasadas.push(c);
@@ -2078,7 +2084,7 @@ const CRM_VISIVEIS=3;
 const crmAbertos=new Set();
 const crmRfqsAbertas=new Set();
 function crmCardEl(c){
-  const d=document.createElement('div');d.className='crmcard '+c.dominio;
+  const d=document.createElement('div');d.className='crmcard '+c.dominio+(crmPerdido(c)?' perdido':'');
   const coResto=document.createElement('div'),rbResto=document.createElement('div');
   const extraC=Math.max(0,(c.contactos||[]).length-CRM_VISIVEIS),extraR=Math.max(0,(c.rfqs||[]).length-CRM_VISIVEIS);
   const aberto=crmAbertos.has(c.id);
@@ -2092,8 +2098,9 @@ function crmCardEl(c){
       (c.etapa?'Etapa: <b>'+esc(c.etapa)+'</b>':'')+
       (crmProdutosDe(c).length?(c.etapa?' · ':'')+'Interesse: <b>'+esc(crmProdutosDe(c).join(', '))+'</b>':'')+
       (c.origem?((c.etapa||crmProdutosDe(c).length)?' · ':'')+'Origem: '+esc(c.origem):'')+'</div>':'')+
-    '<div class="stats"><div><b>'+eur(crmRfqTotal(c))+'</b>valor total RFQ</div>'+
-    '<div><b>'+(c.rfqs||[]).length+'</b>RFQs recebidas</div></div>';
+    '<div class="stats"><div><b>'+eur(crmRfqTotal(c))+'</b>valor RFQ, sem perdidas</div>'+
+    '<div><b>'+(c.rfqs||[]).length+'</b>RFQs recebidas</div>'+
+    (crmRfqPerdido(c)?'<div><b>'+eur(crmRfqPerdido(c))+'</b>perdido / recusado</div>':'')+'</div>';
   if(c.contactos.length){
     const co=document.createElement('div');co.className='contactos';
     c.contactos.forEach((p,i)=>{
@@ -2125,6 +2132,17 @@ function crmCardEl(c){
     pl.appendChild(feita);
   } else pl.innerHTML='<span style="color:var(--steel)">Sem próxima ação.</span>';
   d.appendChild(pl);
+  if(crmPerdido(c)){
+    const f=c.fecho,fb=document.createElement('div');fb.className='ultimo';
+    const MANT={sim:'Sim, manter contacto para uma próxima RFQ',nao:'Não manter contacto',rever:'A rever mais tarde'};
+    fb.innerHTML=f
+      ?'Perdido: <b>'+esc(f.motivo||'sem motivo')+'</b>'+(f.notas?' — '+esc(f.notas):'')+'<br>'+esc(MANT[f.manter]||'Contacto futuro por decidir')+' '
+      :'<span style="color:var(--warn)">Falta a justificação da perda.</span> ';
+    const eb=document.createElement('button');eb.className='x';eb.type='button';eb.textContent=f?'editar fecho':'registar fecho';
+    eb.style.cssText='font-size:11px;border:1px solid var(--line);border-radius:9px;padding:1px 8px;color:var(--navy)';
+    eb.onclick=ev=>{ev.stopPropagation();crmFecho(c)};
+    fb.appendChild(eb);d.appendChild(fb);
+  }
   const ints=interOrdenadas(c);
   if(ints.length){
     const hb=document.createElement('button');hb.className='x';hb.type='button';
@@ -2240,7 +2258,7 @@ function crmMensal(lista){
     host.innerHTML='<h2>RFQs por mês <button class="cta ghost" id="crmMesFechar" style="float:right">Fechar</button></h2>'+
       meses.map(m=>{
         const arr=[...porMes[m]].sort((a,b)=>(b.data||'')<(a.data||'')?-1:1);
-        const tot=arr.reduce((s,r)=>s+(+r.valor||0),0);
+        const tot=arr.reduce((s,r)=>ESTADOS_COM_JUSTIFICACAO.includes(r.estado)?s:s+(+r.valor||0),0);
         return '<div class="mesgrupo"><h3>'+(m==='sem-data'?'Sem data':ymLabel(m))+' — '+arr.length+' RFQ'+(arr.length>1?'s':'')+', '+eur(tot)+'</h3>'+
           arr.map(r=>'<div class="ln"><span>'+esc(r.cliente)+', '+esc(r.descricao)+' <small>'+esc(r.data||'')+'</small> '+
             '<span class="depbadge" style="background:'+ESTADO_RFQ_COR[r.estado]+'">'+ESTADO_RFQ[r.estado]+'</span></span><b>'+eur(r.valor)+'</b></div>').join('')+
@@ -2274,7 +2292,7 @@ function renderCRM(){
   const totV=l.reduce((s,c)=>s+crmRfqTotal(c),0);
   const totR=l.reduce((s,c)=>s+(c.rfqs||[]).length,0);
   const top=document.getElementById('crmTop');
-  top.innerHTML=kpiEl(l.length,'clientes na vista')+kpiEl(eur(totV),'valor total de RFQs, clica para ver por mês')+kpiEl(totR,'RFQs registadas');
+  top.innerHTML=kpiEl(l.length,'clientes na vista')+kpiEl(eur(totV),'valor de RFQs sem perdidas, clica para ver por mês')+kpiEl(totR,'RFQs registadas');
   top.children[1].onclick=()=>crmMensal(l);
   const grid=document.getElementById('crmGrid');grid.innerHTML='';
   if(!l.length){grid.innerHTML='<p class="empty">Sem clientes neste filtro. Cria um no formulário em baixo.</p>';return}
@@ -2339,6 +2357,31 @@ function abrirJustificacaoRfq(c,r){
   btns.appendChild(fechar);host.appendChild(btns);
   host.scrollIntoView({block:'center'});
 }
+function crmFecho(c){
+  const host=document.getElementById('crmEditorHost');
+  const f=c.fecho||{motivo:'',notas:'',manter:'',revisao:''};
+  host.innerHTML='<h2>Fecho do cliente perdido, '+esc(c.nome)+'</h2>'+
+    '<p class="hint">Fica registado para aprenderes com a perda e para saberes se vale a pena voltar a este cliente.</p>'+
+    '<div class="grid2"><div><label class="f">Motivo principal da perda</label><select id="cfMotivo"><option value="">—</option>'+CRM_MOTIVOS.map(m=>'<option>'+m+'</option>').join('')+'</select></div>'+
+    '<div><label class="f">Faz sentido manter contacto para uma próxima RFQ?</label><select id="cfManter"><option value="">—</option><option value="sim">Sim, manter contacto</option><option value="rever">A rever mais tarde</option><option value="nao">Não</option></select></div></div>'+
+    '<div style="margin-top:10px"><label class="f">Justificação e notas finais</label><textarea id="cfNotas" style="min-height:90px" placeholder="O que aconteceu, o que aprendemos, o que ficou por fazer..."></textarea></div>'+
+    '<div id="cfRevWrap" style="margin-top:10px"><label class="f">Quando voltar a contactar (cria a próxima ação no CRM)</label><input type="date" id="cfRev"></div>'+
+    '<div class="btnrow"><button class="cta" id="cfOk">Guardar</button><button class="cta ghost" id="cfNo">Agora não</button></div>';
+  const g=id=>host.querySelector('#'+id);
+  g('cfMotivo').value=f.motivo||'';g('cfManter').value=f.manter||'';g('cfNotas').value=f.notas||'';g('cfRev').value=f.revisao||'';
+  const mostra=()=>{g('cfRevWrap').style.display=g('cfManter').value==='nao'||!g('cfManter').value?'none':''};
+  g('cfManter').onchange=mostra;mostra();
+  g('cfNo').onclick=()=>{host.innerHTML=''};
+  g('cfOk').onclick=()=>{
+    if(!g('cfMotivo').value&&!g('cfNotas').value.trim()){g('cfMotivo').focus();return}
+    c.fecho={motivo:g('cfMotivo').value,notas:g('cfNotas').value.trim(),manter:g('cfManter').value,revisao:g('cfRev').value,data:today()};
+    if(c.fecho.manter!=='nao'&&c.fecho.revisao)c.proxima={texto:'Retomar contacto, possível nova RFQ',data:c.fecho.revisao};
+    if(c.fecho.manter==='nao')c.proxima={texto:'',data:''};
+    save();host.innerHTML='';renderAll();
+  };
+  host.scrollIntoView({block:'center'});
+  g('cfMotivo').focus();
+}
 function crmEdit(c){
   const host=document.getElementById('crmEditorHost');
   host.innerHTML='<h2>Editar CRM, '+esc(c.nome)+'</h2>'+
@@ -2390,6 +2433,7 @@ function crmEdit(c){
     c.nome=nome;
     c.dominio=host.querySelector('#crmDom').value;
     c.departamento=host.querySelector('#crmDept').value.trim();
+    const eraPerdido=crmPerdido(c);
     c.etapa=host.querySelector('#crmEtapa').value;
     c.prioridade=host.querySelector('#crmPrior').value;
     c.origem=host.querySelector('#crmOrigem').value;
@@ -2411,6 +2455,7 @@ function crmEdit(c){
     antigos.forEach(r=>{if(!novosIds.has(r.id)&&r.justificacao)extrairAnexosHtml(r.justificacao).forEach(id=>imgDel(id))});
     c.rfqs=novos;
     save();host.innerHTML='';renderAll();
+    if(!eraPerdido&&crmPerdido(c)&&!c.fecho)crmFecho(c);
   };
   host.scrollIntoView({block:'center'});
 }
